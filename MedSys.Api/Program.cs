@@ -1,6 +1,7 @@
 using MedSys.Api.Mapping;
 using MedSys.BL.DALModels;
 using MedSys.BL.Repositories;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +21,11 @@ builder.Services.AddScoped<IRepository<MedicalDocument>, MedicalDocumentReposito
 builder.Services.AddScoped<IRepositoryFactory, RepositoryFactory>();
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
 
 var app = builder.Build();
 

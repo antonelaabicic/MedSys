@@ -11,7 +11,7 @@ namespace MedSys.BL.Repositories
         }
         public IEnumerable<Checkup> GetAll()
         {
-            throw new System.NotImplementedException();
+            return _context.Checkups.ToList();
         }
 
         public Checkup? GetById(int id)

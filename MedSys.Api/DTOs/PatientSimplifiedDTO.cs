@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace MedSys.Api.Dtos
+namespace MedSys.Api.DTOs
 {
-    public class PatientDTO
+    public class PatientSimplifiedDTO
     {
         [JsonIgnore]
         public int Id { get; set; }
@@ -25,11 +25,5 @@ namespace MedSys.Api.Dtos
         [Required]
         [StringLength(20, ErrorMessage = "OIB can't be longer than 20 characters.")]
         public string Oib { get; set; } = null!;
-
-        public IEnumerable<CheckupDTO> Checkups { get; set; } = null!;
-
-        public IEnumerable<MedicalHistoryDTO> MedicalHistories { get; set; } = null!;
-
-        public IEnumerable<PrescriptionDTO> Prescriptions { get; set; } = null!;
     }
 }
