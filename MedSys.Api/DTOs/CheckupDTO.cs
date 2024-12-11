@@ -8,15 +8,13 @@ namespace MedSys.Api.Dtos
     {
         public int Id { get; set; }
 
-        //[Required]
-        //public PatientSimplifiedDTO Patient { get; set; } = null!;
+        [Required]
+        public PatientSimplifiedDTO Patient { get; set; } = null!;
 
         [Required]
-        public CheckupTypeDTO CheckupType { get; set; } = null!;
+        public CheckupTypeSimplifiedDTO CheckupType { get; set; } = null!;
 
         [Required]
         public DateTime CheckupDateTime { get; set; }
-
-        //public IEnumerable<MedicalDocumentDTO> MedicalDocuments { get; set; } = null!;
     }
 }

@@ -11,12 +11,12 @@ namespace MedSys.Api.Controllers
     [ApiController]
     public class CheckupTypeController : ControllerBase
     {
-        private readonly IRepository<CheckupType> _repository;
+        private readonly ICheckupTypeRepository _repository;
         private readonly IMapper _mapper;
 
         public CheckupTypeController(IRepositoryFactory repositoryFactory, IMapper mapper)
         {
-            _repository = repositoryFactory.GetRepository<CheckupType>();
+            _repository = repositoryFactory.GetRepository<ICheckupTypeRepository>();
             _mapper = mapper;
         }
 

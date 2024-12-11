@@ -15,10 +15,12 @@ builder.Services.AddDbContext<PostgresContext>(options =>
     options.UseNpgsql("name=ConnectionStrings:AppConnStr");
 });
 
-builder.Services.AddScoped<IRepository<CheckupType>, CheckupTypeRepository>();
-builder.Services.AddScoped<IRepository<Checkup>, CheckupRepository>();
+builder.Services.AddScoped<ICheckupRepository, CheckupRepository>();
+builder.Services.AddScoped<IPatientRepository, PatientRepository>();
+builder.Services.AddScoped<ICheckupTypeRepository, CheckupTypeRepository>();
 builder.Services.AddScoped<IRepository<MedicalDocument>, MedicalDocumentRepository>();
 builder.Services.AddScoped<IRepositoryFactory, RepositoryFactory>();
+
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 

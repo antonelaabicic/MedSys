@@ -9,7 +9,9 @@ namespace MedSys.Api.Mapping
     {
         public MappingProfile()
         {
-            CreateMap<CheckupType, CheckupTypeDTO>().ReverseMap();
+            CreateMap<CheckupType, CheckupTypeDTO>()
+                .ReverseMap();
+            CreateMap<CheckupType, CheckupTypeSimplifiedDTO>().ReverseMap();
             CreateMap<MedicalDocument, MedicalDocumentDTO>().ReverseMap();
             CreateMap<Checkup, CheckupDTO>()
                 .ForMember(dest => dest.CheckupDateTime,
@@ -20,8 +22,19 @@ namespace MedSys.Api.Mapping
                 .ForMember(dest => dest.Time,
                     opt => opt.MapFrom(src => TimeOnly.FromDateTime(src.CheckupDateTime)));
 
-            CreateMap<Patient, PatientDTO>().ReverseMap();
-            CreateMap<Patient, PatientSimplifiedDTO>().ReverseMap();
+            //
+            CreateMap<Patient, PatientDTO>()
+                .ForMember(dest => dest.DateOfBirth, opt => opt.MapFrom(src => src.DateOfBirth.ToDateTime(TimeOnly.MinValue)))
+                .ReverseMap()
+                .ForMember(dest => dest.DateOfBirth,
+                    opt => opt.MapFrom(src => DateOnly.FromDateTime(src.DateOfBirth)));
+
+            CreateMap<Patient, PatientSimplifiedDTO>()
+                .ForMember(dest => dest.DateOfBirth,
+                    opt => opt.MapFrom(src => src.DateOfBirth.ToDateTime(TimeOnly.MinValue))) 
+                .ReverseMap()
+                .ForMember(dest => dest.DateOfBirth,
+                    opt => opt.MapFrom(src => DateOnly.FromDateTime(src.DateOfBirth)));
             CreateMap<Disease, DiseaseDTO>().ReverseMap();
 
             CreateMap<Drug, DrugDTO>().ReverseMap();

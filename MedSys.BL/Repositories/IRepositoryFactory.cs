@@ -8,7 +8,7 @@ namespace MedSys.BL.Repositories
 {
     public interface IRepositoryFactory
     {
-        IRepository<T> GetRepository<T>() where T : class;
+        T GetRepository<T>() where T : class;
     }
 
 }

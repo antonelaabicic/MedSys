@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace MedSys.BL.Repositories
 {
-    public class CheckupTypeRepository : IRepository<CheckupType>
+    public class CheckupTypeRepository : ICheckupTypeRepository
     {
         private readonly PostgresContext _context;
         public CheckupTypeRepository(PostgresContext context)
@@ -31,6 +31,11 @@ namespace MedSys.BL.Repositories
             Save();
 
             return checkupType;
+        }
+
+        public CheckupType? FindCheckupTypeByCode(string code)
+        {
+            return _context.CheckupTypes.FirstOrDefault(ct => ct.Code == code);
         }
 
         public IEnumerable<CheckupType> GetAll()

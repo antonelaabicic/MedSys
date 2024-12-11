@@ -32,7 +32,10 @@ public partial class PostgresContext : DbContext
     public virtual DbSet<Prescription> Prescriptions { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseNpgsql("name=ConnectionStrings:AppConnStr").UseLazyLoadingProxies();
+        => optionsBuilder
+                .UseNpgsql("name=ConnectionStrings:AppConnStr")
+                .UseLazyLoadingProxies()
+                .EnableSensitiveDataLogging();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

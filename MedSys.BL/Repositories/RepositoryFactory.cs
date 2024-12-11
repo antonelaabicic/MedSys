@@ -16,10 +16,12 @@ namespace MedSys.BL.Repositories
             _serviceProvider = serviceProvider;
         }
 
-        public IRepository<T> GetRepository<T>() where T : class
+        public T GetRepository<T>() where T : class
         {
-            return _serviceProvider.GetService<IRepository<T>>() ?? 
-                throw new InvalidOperationException($"No such repository exists.");
+            var repository = _serviceProvider.GetService<T>() ?? 
+                throw new InvalidOperationException($"Repository of type {typeof(T).FullName} is not registered.");
+
+            return repository;
         }
     }
 }
