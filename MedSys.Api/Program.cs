@@ -18,9 +18,11 @@ builder.Services.AddDbContext<PostgresContext>(options =>
 builder.Services.AddScoped<ICheckupRepository, CheckupRepository>();
 builder.Services.AddScoped<IPatientRepository, PatientRepository>();
 builder.Services.AddScoped<ICheckupTypeRepository, CheckupTypeRepository>();
+builder.Services.AddScoped<IPrescriptionRepository, PrescriptionRepository>();
 builder.Services.AddScoped<IRepository<MedicalDocument>, MedicalDocumentRepository>();
+builder.Services.AddScoped<IDrugRepository, DrugRepository>();
+builder.Services.AddScoped<IRepository<Disease>, DiseaseRepository>();
 builder.Services.AddScoped<IRepositoryFactory, RepositoryFactory>();
-
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 

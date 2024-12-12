@@ -17,10 +17,7 @@ namespace MedSys.BL.Repositories
 
         public Checkup? GetById(int id)
         {
-            return _context.Checkups
-                .Include(c => c.Patient)
-                .Include(c => c.CheckupType)
-                .FirstOrDefault(c => c.Id == id);
+            return _context.Checkups.FirstOrDefault(c => c.Id == id);
         }
 
         public void Insert(Checkup entity)
@@ -42,6 +39,9 @@ namespace MedSys.BL.Repositories
                 throw new Exception($"Checkup with id {id} not found.");
             }
 
+            var patientName = checkup.Patient?.FirstName; 
+            var checkupTypeName = checkup.CheckupType?.Name;
+
             _context.MedicalDocuments.RemoveRange(checkup.MedicalDocuments);
             _context.Checkups.Remove(checkup);
 
@@ -57,17 +57,13 @@ namespace MedSys.BL.Repositories
 
         public IEnumerable<Checkup> GetAllByPatientId(int patientId)
         {
-            return _context.Checkups
-                .Include(c => c.Patient)
-                .Include(c => c.CheckupType)
-                .Where(c => c.PatientId == patientId)
-                .ToList();
+            return _context.Checkups.Where(c => c.PatientId == patientId).ToList();
         }
 
         public Checkup? GetExistingCheckup(int patientId, int checkupTypeId, DateOnly date, TimeOnly time)
         {
-            return _context.Checkups
-                    .FirstOrDefault(b => b.PatientId == patientId && b.CheckupTypeId == checkupTypeId && b.Date == date && b.Time == time);
+            return _context.Checkups.FirstOrDefault(b => b.PatientId == patientId && 
+                b.CheckupTypeId == checkupTypeId && b.Date == date && b.Time == time);
         }
     }
 }

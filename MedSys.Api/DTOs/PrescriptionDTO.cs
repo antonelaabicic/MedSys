@@ -1,18 +1,18 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using MedSys.Api.DTOs;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace MedSys.Api.Dtos
 {
     public class PrescriptionDTO
     {
-        [JsonIgnore]
         public int Id { get; set; }
 
         [Required]
-        public PatientDTO Patient { get; set; } = null!;
+        public PatientSimplifiedDTO Patient { get; set; } = null!;
 
         [Required]
-        public DrugDTO Drug { get; set; } = null!;
+        public DrugSimplifiedDTO Drug { get; set; } = null!;
 
         [Required]
         [StringLength(100, ErrorMessage = "Dosage can't be longer than 100 characters.")]

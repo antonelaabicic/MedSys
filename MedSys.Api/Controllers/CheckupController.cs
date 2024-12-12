@@ -153,7 +153,7 @@ namespace MedSys.Api.Controllers
                     return NotFound($"No checkups found for patient with id {patientId}.");
                 }
 
-                var checkupDTOs = checkups.Select(c => _mapper.Map<CheckupDTO>(c)).ToList(); // maybe
+                var checkupDTOs = checkups.Select(c => _mapper.Map<CheckupDTO>(c)).ToList(); 
                 return Ok(checkupDTOs);
             }
             catch (Exception ex)
