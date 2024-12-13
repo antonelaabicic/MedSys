@@ -55,7 +55,7 @@ namespace MedSys.Api.Controllers
         [HttpGet("patient/{patientId}")]
         public ActionResult<IEnumerable<PrescriptionDTO>> GetByPatientId(int patientId)
         {
-            var prescriptions = _repository.GetByPatientId(patientId);
+            var prescriptions = _repository.GetPrescriptionByPatientId(patientId);
             if (!prescriptions.Any())
             {
                 return NotFound($"No prescriptions found for patient with id {patientId}.");

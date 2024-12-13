@@ -42,7 +42,7 @@ namespace MedSys.BL.Repositories
             return _context.Prescriptions.FirstOrDefault(p => p.Id == id);
         }
 
-        public IEnumerable<Prescription> GetByPatientId(int patientId)
+        public IEnumerable<Prescription> GetPrescriptionByPatientId(int patientId)
         {
             return _context.Prescriptions.Where(p => p.PatientId == patientId).ToList();
         }

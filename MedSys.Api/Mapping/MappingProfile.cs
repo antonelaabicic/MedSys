@@ -9,8 +9,7 @@ namespace MedSys.Api.Mapping
     {
         public MappingProfile()
         {
-            CreateMap<CheckupType, CheckupTypeDTO>()
-                .ReverseMap();
+            CreateMap<CheckupType, CheckupTypeDTO>().ReverseMap();
             CreateMap<CheckupType, CheckupTypeSimplifiedDTO>().ReverseMap();
             CreateMap<MedicalDocument, MedicalDocumentDTO>().ReverseMap();
             CreateMap<Checkup, CheckupDTO>()
@@ -34,15 +33,23 @@ namespace MedSys.Api.Mapping
                 .ReverseMap()
                 .ForMember(dest => dest.DateOfBirth, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.DateOfBirth)));
             CreateMap<Disease, DiseaseDTO>().ReverseMap();
+            CreateMap<Disease, DiseaseSimplifiedDTO>().ReverseMap();
 
             CreateMap<Drug, DrugDTO>().ReverseMap();
             CreateMap<Drug, DrugSimplifiedDTO>().ReverseMap();
             CreateMap<Prescription, PrescriptionDTO>()
-                        .ForMember(dest => dest.IssueDate, opt => opt.MapFrom(src => src.IssueDate.ToDateTime(TimeOnly.MinValue)))
-                        .ReverseMap()
-                        .ForMember(dest => dest.IssueDate, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.IssueDate)));
-            CreateMap<MedicalHistory, MedicalHistoryDTO>().ReverseMap();
-            
+                .ForMember(dest => dest.IssueDate, opt => opt.MapFrom(src => src.IssueDate.ToDateTime(TimeOnly.MinValue)))
+                .ReverseMap()
+                .ForMember(dest => dest.IssueDate, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.IssueDate)));
+            CreateMap<MedicalHistory, MedicalHistoryDTO>()
+                .ForMember(dest => dest.StartDate, opt => opt.MapFrom(src => src.StartDate.ToDateTime(TimeOnly.MinValue)))
+                .ForMember(dest => dest.EndDate, opt => opt.MapFrom(src => src.EndDate.HasValue
+                    ? src.EndDate.Value.ToDateTime(TimeOnly.MinValue) : (DateTime?)null))
+                .ReverseMap()
+                .ForMember(dest => dest.StartDate, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.StartDate)))
+                .ForMember(dest => dest.EndDate, opt => opt.MapFrom(src => src.EndDate.HasValue
+                    ? DateOnly.FromDateTime(src.EndDate.Value) : (DateOnly?)null));
+
         }
     }
 }

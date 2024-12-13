@@ -9,7 +9,7 @@ namespace MedSys.BL.Repositories
 {
     public interface IPrescriptionRepository : IRepository<Prescription>
     {
-        IEnumerable<Prescription> GetByPatientId(int patientId);
+        IEnumerable<Prescription> GetPrescriptionByPatientId(int patientId);
         Prescription? GetExistingPrescription(int patientId, int drugId, DateTime issueDate);
     }
 }

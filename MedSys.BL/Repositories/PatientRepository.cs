@@ -27,6 +27,16 @@ namespace MedSys.BL.Repositories
                                      p.DateOfBirth == DateOnly.FromDateTime(dateOfBirth));
         }
 
+        public Patient? FindPatientByLastName(string lastName)
+        {
+            return _context.Patients.FirstOrDefault(p => p.LastName == lastName);
+        }
+
+        public Patient? FindPatientByOIB(string oib)
+        {
+            return _context.Patients.FirstOrDefault(p => p.Oib == oib);
+        }
+
         public IEnumerable<Patient> GetAll()
         {
             throw new NotImplementedException();

@@ -10,5 +10,7 @@ namespace MedSys.BL.Repositories
     public interface IPatientRepository : IRepository<Patient>
     {
         Patient? FindPatientByDetails(string firstName, string lastName, DateTime dateOfBirth);
+        Patient? FindPatientByLastName(string lastName);
+        Patient? FindPatientByOIB(string oib);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace MedSys.BL.Repositories
 {
-    public class MedicalDocumentRepository : IRepository<MedicalDocument>
+    public class MedicalDocumentRepository : IMedicalDocumentRepository
     {
         private readonly PostgresContext _context;
         public MedicalDocumentRepository(PostgresContext context)
