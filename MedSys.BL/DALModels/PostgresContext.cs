@@ -128,6 +128,7 @@ public partial class PostgresContext : DbContext
             entity.Property(e => e.FilePath)
                 .HasMaxLength(255)
                 .HasColumnName("file_path");
+            entity.Property(e => e.FileData).HasColumnName("filedata");
             entity.Property(e => e.Notes).HasColumnName("notes");
             entity.Property(e => e.Text).HasColumnName("text");
             entity.Property(e => e.Title)

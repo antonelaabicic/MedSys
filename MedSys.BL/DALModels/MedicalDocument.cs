@@ -19,5 +19,7 @@ public partial class MedicalDocument
 
     public string? FilePath { get; set; }
 
+    public byte[]? FileData { get; set; }
+
     public virtual Checkup Checkup { get; set; } = null!;
 }

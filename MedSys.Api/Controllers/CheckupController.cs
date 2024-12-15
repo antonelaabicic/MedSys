@@ -85,7 +85,7 @@ namespace MedSys.Api.Controllers
                     return NotFound($"Checkup type with code {value.CheckupType.Code} does not exist.");
                 }
 
-                var existingCheckup = _repository.GetExistingCheckup(value.Patient.Id, value.CheckupType.Id, DateOnly.FromDateTime(value.CheckupDateTime), TimeOnly.FromDateTime(value.CheckupDateTime));
+                var existingCheckup = _repository.GetExistingCheckup(value.Patient.Id, value.CheckupType.Id, DateOnly.FromDateTime(value.CheckupDateTime));
                 if (existingCheckup != null)
                 {
                     return Conflict("Such checkup already exists.");
@@ -162,8 +162,6 @@ namespace MedSys.Api.Controllers
             }
         }
 
-
-        // DELETE api/<CheckupController>/5
         [HttpDelete("{id}")]
         public ActionResult<CheckupDTO> Delete(int id)
         {

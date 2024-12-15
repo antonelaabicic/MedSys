@@ -12,7 +12,20 @@ namespace MedSys.Api.Mapping
             CreateMap<CheckupType, CheckupTypeDTO>().ReverseMap();
             CreateMap<CheckupType, CheckupTypeSimplifiedDTO>().ReverseMap();
             CreateMap<MedicalDocument, MedicalDocumentDTO>().ReverseMap();
+            CreateMap<MedicalDocumentUploadDTO, MedicalDocument>()
+                .ForMember(dest => dest.FilePath, opt => opt.MapFrom(src => src.MedicalDocument.FileName))
+                .ForMember(dest => dest.FileData, opt => opt.Ignore()) 
+                .ReverseMap();
+
             CreateMap<Checkup, CheckupDTO>()
+                .ForMember(dest => dest.CheckupDateTime,
+                    opt => opt.MapFrom(src => src.Date.ToDateTime(src.Time)))
+                .ReverseMap()
+                .ForMember(dest => dest.Date,
+                    opt => opt.MapFrom(src => DateOnly.FromDateTime(src.CheckupDateTime)))
+                .ForMember(dest => dest.Time,
+                    opt => opt.MapFrom(src => TimeOnly.FromDateTime(src.CheckupDateTime)));            
+            CreateMap<Checkup, CheckupSimplifiedDTO>()
                 .ForMember(dest => dest.CheckupDateTime,
                     opt => opt.MapFrom(src => src.Date.ToDateTime(src.Time)))
                 .ReverseMap()

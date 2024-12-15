@@ -12,32 +12,52 @@ namespace MedSys.BL.Repositories
 
         public MedicalDocument Delete(int id)
         {
-            throw new NotImplementedException();
+            var medicalDocument = GetById(id);
+            if (medicalDocument == null)
+            {
+                throw new Exception($"Medical document with id {id} not found.");
+            }
+
+            var checkupPatientName = medicalDocument.Checkup.Patient?.FirstName;
+
+            _context.MedicalDocuments.Remove(medicalDocument);
+            Save();
+            return medicalDocument;
         }
 
         public IEnumerable<MedicalDocument> GetAll()
         {
-            throw new NotImplementedException();
+            return _context.MedicalDocuments.ToList();
+        }
+
+        public IEnumerable<MedicalDocument> GetMedicalDocumentByCheckupId(int checkupId)
+        {
+            return _context.MedicalDocuments.Where(p => p.CheckupId == checkupId).ToList();
         }
 
         public MedicalDocument? GetById(int id)
         {
-            throw new NotImplementedException();
+            return _context.MedicalDocuments.FirstOrDefault(p => p.Id == id);
         }
 
         public void Insert(MedicalDocument entity)
         {
-            throw new NotImplementedException();
+            _context.MedicalDocuments.Add(entity);
         }
 
         public void Save()
         {
-            throw new NotImplementedException();
+            _context.SaveChanges();
         }
 
         public void Update(MedicalDocument entity)
         {
-            throw new NotImplementedException();
+            _context.MedicalDocuments.Update(entity);
+        }
+
+        public IEnumerable<MedicalDocument> GetMedicalDocumentByPatientId(int patientId)
+        {
+            return _context.MedicalDocuments.Where(p => p.Checkup.PatientId == patientId).ToList();
         }
     }
 }

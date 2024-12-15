@@ -60,10 +60,10 @@ namespace MedSys.BL.Repositories
             return _context.Checkups.Where(c => c.PatientId == patientId).ToList();
         }
 
-        public Checkup? GetExistingCheckup(int patientId, int checkupTypeId, DateOnly date, TimeOnly time)
+        public Checkup? GetExistingCheckup(int patientId, int checkupTypeId, DateOnly date)
         {
             return _context.Checkups.FirstOrDefault(b => b.PatientId == patientId && 
-                b.CheckupTypeId == checkupTypeId && b.Date == date && b.Time == time);
+                b.CheckupTypeId == checkupTypeId && b.Date == date);
         }
     }
 }

@@ -9,6 +9,7 @@ namespace MedSys.BL.Repositories
 {
     public interface IMedicalDocumentRepository : IRepository<MedicalDocument>
     {
-        
+        IEnumerable<MedicalDocument> GetMedicalDocumentByCheckupId(int checkupId);
+        IEnumerable<MedicalDocument> GetMedicalDocumentByPatientId(int patientId);
     }
 }
