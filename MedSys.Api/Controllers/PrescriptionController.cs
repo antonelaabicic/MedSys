@@ -14,7 +14,6 @@ namespace MedSys.Api.Controllers
         private readonly IPatientRepository _patientRepository;
         private readonly IDrugRepository _drugRepository;
         private readonly IMapper _mapper;
-
         public PrescriptionController(IRepositoryFactory repositoryFactory, IMapper mapper)
         {
             _repository = repositoryFactory.GetRepository<IPrescriptionRepository>();
@@ -66,7 +65,7 @@ namespace MedSys.Api.Controllers
         }
 
         [HttpPost]
-        public ActionResult<PrescriptionDTO> Post([FromBody] PrescriptionDTO value)
+        public ActionResult<PrescriptionDTO> Post([FromBody] PrescriptionSimplifiedDTO value)
         {
             try
             {
@@ -75,25 +74,19 @@ namespace MedSys.Api.Controllers
                     return BadRequest(ModelState);
                 }
 
-                var patient = _patientRepository.FindPatientByDetails(value.Patient.FirstName, value.Patient.LastName, value.Patient.DateOfBirth);
+                var patient = _patientRepository.GetById(value.PatientId);
                 if (patient == null)
                 {
-                    patient = _mapper.Map<Patient>(value.Patient);
-                    _patientRepository.Insert(patient);
-                    _patientRepository.Save();
-                    value.Patient.Id = patient.Id;
+                    return NotFound($"Patient with id {value.PatientId} wasn't found.");
                 }
 
-                var drug = _drugRepository.GetDrugByName(value.Drug.Name);
+                var drug = _drugRepository.GetById(value.DrugId);
                 if (drug == null)
                 {
-                    drug = _mapper.Map<Drug>(value.Drug);
-                    _drugRepository.Insert(drug);
-                    _drugRepository.Save();
-                    value.Drug.Id = drug.Id;
+                    return NotFound($"Drug with id {value.DrugId} wasn't found.");
                 }
 
-                var existingPrescription = _repository.GetExistingPrescription(value.Patient.Id, value.Drug.Id, value.IssueDate);
+                var existingPrescription = _repository.GetExistingPrescription(value.PatientId, value.DrugId, value.IssueDate);
                 if (existingPrescription != null)
                 {
                     return Conflict("Such prescription already exists.");
@@ -125,15 +118,10 @@ namespace MedSys.Api.Controllers
                 return NotFound($"Prescription with id {id} wasn't found.");
             }
 
-            existingPrescription.Patient.FirstName = value.Patient.FirstName ?? existingPrescription.Patient.FirstName;
-            existingPrescription.Patient.LastName = value.Patient.LastName ?? existingPrescription.Patient.LastName;
-            existingPrescription.Patient.DateOfBirth = DateOnly.FromDateTime(value.Patient.DateOfBirth);
-            existingPrescription.Patient.Gender = value.Patient.Gender ?? existingPrescription.Patient.Gender;
-            existingPrescription.Patient.Oib = value.Patient.Oib ?? existingPrescription.Patient.Oib;
-            existingPrescription.Drug.Name = value.Drug.Name ?? existingPrescription.Drug.Name;
-            existingPrescription.Dosage = value.Dosage ?? existingPrescription.Dosage;
+            existingPrescription.DrugId = value.DrugId;
             existingPrescription.Frequency = value.Frequency ?? existingPrescription.Frequency;
             existingPrescription.Duration = value.Duration ?? existingPrescription.Duration;
+            existingPrescription.Dosage = value.Dosage ?? existingPrescription.Dosage;
             existingPrescription.IssueDate = DateOnly.FromDateTime(value.IssueDate);
 
             _repository.Update(existingPrescription);

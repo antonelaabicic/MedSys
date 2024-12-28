@@ -11,12 +11,12 @@ namespace MedSys.Api.Controllers
     [ApiController]
     public class DrugController : ControllerBase
     {
-        private readonly IRepository<Drug> _repository;
+        private readonly IDrugRepository _repository;
         private readonly IMapper _mapper;
 
         public DrugController(IRepositoryFactory repositoryFactory, IMapper mapper)
         {
-            _repository = repositoryFactory.GetRepository<IRepository<Drug>>();
+            _repository = repositoryFactory.GetRepository<IDrugRepository>();
             _mapper = mapper;
         }
 
@@ -33,6 +33,20 @@ namespace MedSys.Api.Controllers
             {
                 return StatusCode(500, ex.Message);
             }
+        }
+
+        [HttpGet("{id}")]
+        public ActionResult<DrugDTO> Get(int id)
+        {
+            var drug = _repository.GetById(id);
+            if (drug == null)
+            {
+                return NotFound($"Drug with id {id} was not found.");
+            }
+
+            var dto = _mapper.Map<DrugDTO>(drug);
+
+            return Ok(dto);
         }
 
         [HttpPost]

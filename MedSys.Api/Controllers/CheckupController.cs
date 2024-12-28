@@ -61,7 +61,7 @@ namespace MedSys.Api.Controllers
         }
 
         [HttpPost]
-        public ActionResult<CheckupDTO> Post([FromBody] CheckupDTO value)
+        public ActionResult<CheckupDTO> Post([FromBody] CheckupSimplifiedDTO value)
         {
             try
             {
@@ -70,22 +70,19 @@ namespace MedSys.Api.Controllers
                     return BadRequest(ModelState);
                 }
 
-                var patient = _patientRepository.FindPatientByDetails(value.Patient.FirstName, value.Patient.LastName, value.Patient.DateOfBirth);
+                var patient = _patientRepository.GetById(value.PatientId);
                 if (patient == null)
                 {
-                    patient = _mapper.Map<Patient>(value.Patient);
-                    _patientRepository.Insert(patient);
-                    _patientRepository.Save();
-                    value.Patient.Id = patient.Id;
+                    return NotFound($"Patient with id {value.PatientId} wasn't found.");
                 }
 
-                var checkupType = _checkupTypeRepository.FindCheckupTypeByCode(value.CheckupType.Code);
+                var checkupType = _checkupTypeRepository.GetById(value.CheckupTypeId);
                 if (checkupType == null)
                 {
-                    return NotFound($"Checkup type with code {value.CheckupType.Code} does not exist.");
+                    return NotFound($"Such checkup type does not exist.");
                 }
 
-                var existingCheckup = _repository.GetExistingCheckup(value.Patient.Id, value.CheckupType.Id, DateOnly.FromDateTime(value.CheckupDateTime));
+                var existingCheckup = _repository.GetExistingCheckup(value.PatientId, value.CheckupTypeId, DateOnly.FromDateTime(value.CheckupDateTime));
                 if (existingCheckup != null)
                 {
                     return Conflict("Such checkup already exists.");
@@ -119,13 +116,7 @@ namespace MedSys.Api.Controllers
                     return NotFound($"Checkup with id {id} wasn't found.");
                 }
 
-                existingCheckup.Patient.FirstName = value.Patient.FirstName ?? existingCheckup.Patient.FirstName; 
-                existingCheckup.Patient.LastName = value.Patient.LastName ?? existingCheckup.Patient.LastName;
-                existingCheckup.Patient.DateOfBirth = DateOnly.FromDateTime(value.Patient.DateOfBirth);
-                existingCheckup.Patient.Gender = value.Patient.Gender ?? existingCheckup.Patient.Gender;
-                existingCheckup.Patient.Oib = value.Patient.Oib ?? existingCheckup.Patient.Oib;
-                existingCheckup.CheckupType.Code = value.CheckupType.Code ?? existingCheckup.CheckupType.Code;
-                existingCheckup.CheckupType.Name = value.CheckupType.Name ?? existingCheckup.CheckupType.Name;
+                existingCheckup.CheckupTypeId = value.CheckupTypeId;
                 existingCheckup.Date = DateOnly.FromDateTime(value.CheckupDateTime);
                 existingCheckup.Time = TimeOnly.FromDateTime(value.CheckupDateTime);
 
@@ -147,7 +138,7 @@ namespace MedSys.Api.Controllers
         {
             try
             {
-                var checkups = _repository.GetAllByPatientId(patientId);
+                var checkups = _repository.GetCheckupsByPatientId(patientId);
                 if (!checkups.Any())
                 {
                     return NotFound($"No checkups found for patient with id {patientId}.");

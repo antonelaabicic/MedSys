@@ -9,7 +9,7 @@ namespace MedSys.BL.Repositories
 {
     public interface ICheckupRepository : IRepository<Checkup>
     {
-        IEnumerable<Checkup> GetAllByPatientId(int patientId);
+        IEnumerable<Checkup> GetCheckupsByPatientId(int patientId);
         Checkup? GetExistingCheckup(int patientId, int checkupTypeId, DateOnly date);
     }
 }

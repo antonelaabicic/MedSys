@@ -1,0 +1,354 @@
+﻿@page "/Patients/View/{patientId:int}"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.Dtos
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Patient Details</PageTitle>
+<h3>Patient Details</h3>
+
+@if (patient == null)
+{
+    <p>Loading patient details...</p>
+}
+else
+{
+    <div>
+        <p><strong>First Name:</strong> @patient.FirstName</p>
+        <p><strong>Last Name:</strong> @patient.LastName</p>
+        <p><strong>Date of Birth:</strong> @patient.DateOfBirth.ToString("dd.MM.yyyy.")</p>
+        <p><strong>Gender:</strong> @patient.Gender</p>
+        <p><strong>OIB:</strong> @patient.Oib</p>
+    </div>
+    <hr />
+    <h4>Checkups</h4>
+    <div class="d-flex justify-content-between">
+        <div class="ms-auto">
+            <button class="btn btn-success" @onclick="() => NavigateToAddCheckup(patientId)">Add Checkup</button>
+        </div>
+    </div>
+    @if (checkups.Any())
+    {
+        <div class="container-fluid pt-3">
+            <div class="table-responsive">
+                <table class="table table-bordered text-center">
+                    <thead>
+                        <tr>
+                            <th>Checkup Type</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var checkup in checkups)
+                        {
+                            <tr>
+                                <td>@checkup.CheckupType.Name</td>
+                                <td>@checkup.CheckupDateTime.ToString("dd.MM.yyyy.")</td>
+                                <td>@checkup.CheckupDateTime.ToString("HH:mm") h</td>
+                                <td>
+                                    <button class="btn btn btn-warning btn-sm" @onclick="() => ViewCheckup(checkup.Id)">View</button>
+                                    <button class="btn btn-primary btn-sm" @onclick="() => EditCheckup(checkup.Id)">Edit</button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => ShowDeleteModal(checkup, ItemType.Checkup)">Delete</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <p>No checkups found for this patient.</p>
+    }
+
+    <hr />
+    <h4>Prescriptions</h4>
+    <div class="d-flex justify-content-between">
+        <div class="ms-auto">
+            <button class="btn btn-success" @onclick="() => NavigateToAddPrescription(patientId)">Add Prescription</button>
+        </div>
+    </div>
+    @if (prescriptions.Any())
+    {
+        <div class="container-fluid pt-3">
+            <div class="table-responsive">
+                <table class="table table-bordered text-center">
+                    <thead>
+                        <tr>
+                            <th>Drug</th>
+                            <th>Dosage</th>
+                            <th>Frequency</th>
+                            <th>Duration</th>
+                            <th>Issue Date</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var prescription in prescriptions)
+                        {
+                            <tr>
+                                <td>@prescription.Drug.Name</td>
+                                <td>@prescription.Dosage</td>
+                                <td>@prescription.Frequency</td>
+                                <td>@prescription.Duration</td>
+                                <td>@prescription.IssueDate.ToString("dd.MM.yyyy.")</td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm" @onclick="() => EditPrescription(prescription.Id)">
+                                        Edit
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => ShowDeleteModal(prescription, ItemType.Prescription)">
+                                        Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <p>No prescriptions found for this patient.</p>
+    }
+
+    <hr />
+    <h4>Medical History</h4>
+    <div class="d-flex justify-content-between">
+        <div class="ms-auto">
+            <button class="btn btn-success" @onclick="() => NavigateToAddMedicalHistory(patientId)">Add Medical History</button>
+        </div>
+    </div>
+    @if (medicalHistories.Any())
+    {
+        <div class="container-fluid pt-3">
+            <div class="table-responsive">
+                <table class="table table-bordered text-center">
+                    <thead>
+                        <tr>
+                            <th>Disease</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var history in medicalHistories)
+                        {
+                            <tr>
+                                <td>@history.Disease.Name</td>
+                                <td>@history.StartDate.ToString("dd.MM.yyyy.")</td>
+                                <td>@(history.EndDate.HasValue ? history.EndDate.Value.ToString("dd.MM.yyyy.") : "Ongoing")</td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm" @onclick="() => EditMedicalHistory(history.Id)">
+                                        Edit
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => ShowDeleteModal(history, ItemType.MedicalHistory)">
+                                        Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <p>No medical history records found for this patient.</p>
+    }
+
+    <button class="btn btn-secondary mt-3" @onclick="GoBack">Back</button>
+}
+
+@if (showDeleteConfirmation)
+{
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" @onclick="CloseDeleteModal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete @ShowDeleteMessage(deleteItemType)?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmDeleteAsync">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    [Parameter] public int patientId { get; set; }
+    private PatientDTO patient = null!;
+    private List<CheckupDTO> checkups = new List<CheckupDTO>();
+    private List<PrescriptionDTO> prescriptions = new List<PrescriptionDTO>();
+    private List<MedicalHistoryDTO> medicalHistories = new List<MedicalHistoryDTO>();
+
+    private bool showDeleteConfirmation = false;
+    private object currentItemToDelete = null!;
+    private ItemType? deleteItemType;
+
+    protected override async Task OnInitializedAsync()
+    {
+        patient = await ApiService.GetByIdAsync<PatientDTO>(patientId);
+        checkups = await ApiService.GetItemsByPatientIdAsync<CheckupDTO>(patientId);
+        prescriptions = await ApiService.GetItemsByPatientIdAsync<PrescriptionDTO>(patientId);
+        medicalHistories = await ApiService.GetItemsByPatientIdAsync<MedicalHistoryDTO>(patientId);
+    }
+
+    private void NavigateToAddCheckup(int patientId)
+    {
+        NavigateToUrl(ItemType.Checkup, UrlVerb.Add, patientId);
+    }
+
+    private void NavigateToAddPrescription(int patientId)
+    {
+        NavigateToUrl(ItemType.Prescription, UrlVerb.Add, patientId);
+    }
+
+    private void NavigateToAddMedicalHistory(int patientId)
+    {
+        NavigateToUrl(ItemType.MedicalHistory, UrlVerb.Add, patientId);
+    }
+
+    private void NavigateToAdd(string url)
+    {
+        Navigation.NavigateTo(url, forceLoad: false);
+    }
+
+    private void ShowDeleteModal<T>(T item, ItemType itemType)
+    {
+        showDeleteConfirmation = true;
+        currentItemToDelete = item!;
+        deleteItemType = itemType;
+    }
+
+    private void CloseDeleteModal()
+    {
+        showDeleteConfirmation = false;
+        currentItemToDelete = null;
+        deleteItemType = null;
+    }
+
+    private string ShowDeleteMessage(ItemType? itemType)
+    {
+        string message = string.Empty;
+
+        if (currentItemToDelete is CheckupDTO checkup)
+        {
+            message = $"{checkup.CheckupType.Name} ({(@checkup.CheckupType.Code)}) on {checkup.CheckupDateTime.ToString("dd.MM.yyyy.")} at {checkup.CheckupDateTime.ToString("HH:mm")} h";
+        }
+        else if (currentItemToDelete is PrescriptionDTO prescription)
+        {
+            message = $"prescription for {prescription.Drug.Name} {prescription.Dosage} issued at { prescription.IssueDate.ToString("dd.MM.yyyy.")} ";
+        }
+        else if (currentItemToDelete is MedicalHistoryDTO history)
+        {
+            message = $"medical history record for {history.Disease.Name}";
+        }
+
+        return message;
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        bool isDeleted = false;
+
+        if (deleteItemType == ItemType.Checkup && currentItemToDelete is CheckupDTO checkup)
+        {
+            isDeleted = await ApiService.DeleteAsync<CheckupDTO>(checkup.Id);
+            if (isDeleted)
+            {
+                checkups.Remove(checkup);
+            }
+        }
+        else if (deleteItemType == ItemType.Prescription && currentItemToDelete is PrescriptionDTO prescription)
+        {
+            isDeleted = await ApiService.DeleteAsync<PrescriptionDTO>(prescription.Id);
+            if (isDeleted)
+            {
+                prescriptions.Remove(prescription);
+            }
+        }
+        else if (deleteItemType == ItemType.MedicalHistory && currentItemToDelete is MedicalHistoryDTO history)
+        {
+            isDeleted = await ApiService.DeleteAsync<MedicalHistoryDTO>(history.Id);
+            if (isDeleted)
+            {
+                medicalHistories.Remove(history);
+            }
+        }
+
+        if (!isDeleted)
+        {
+            Console.WriteLine($"Failed to delete {deleteItemType}.");
+        }
+
+        showDeleteConfirmation = false;
+        currentItemToDelete = null;
+        deleteItemType = null;
+    }
+
+    private void EditCheckup(int checkupId)
+    {
+        NavigateToUrl(ItemType.Checkup, UrlVerb.Edit, checkupId);
+    }
+
+    private void EditPrescription(int prescriptionId)
+    {
+        NavigateToUrl(ItemType.Prescription, UrlVerb.Edit, prescriptionId);
+    }
+
+    private void EditMedicalHistory(int medicalHistoryId)
+    {
+        NavigateToUrl(ItemType.MedicalHistory, UrlVerb.Edit, medicalHistoryId);
+    }
+
+    private void NavigateToUrl(ItemType itemType, UrlVerb urlVerb, int itemId)
+    {
+        string insertItemType = itemType == ItemType.MedicalHistory ? "MedicalHistories" : itemType.ToString() + "s";
+        if (urlVerb == UrlVerb.Add)
+        {
+            Navigation.NavigateTo($"/{insertItemType}/{urlVerb.ToString()}/{itemId}", forceLoad: false);
+        }
+        else if (urlVerb == UrlVerb.Edit)
+        {
+            Navigation.NavigateTo($"/{insertItemType}/{urlVerb.ToString()}/{patientId}/{itemId}", forceLoad: false);
+        }
+    }
+
+    private void ViewCheckup(int checkupId)
+    {
+        Navigation.NavigateTo($"/Checkups/View/{patientId}/{checkupId}", forceLoad: false);
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/Patients");
+    }
+
+    public enum ItemType
+    {
+        Checkup,
+        Prescription,
+        MedicalHistory
+    }
+
+    public enum UrlVerb     
+    {
+        Add,
+        Edit
+    }
+}

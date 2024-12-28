@@ -66,7 +66,7 @@ namespace MedSys.Api.Controllers
         }
 
         [HttpPost]
-        public ActionResult<MedicalHistoryDTO> Post([FromBody] MedicalHistoryDTO value)
+        public ActionResult<MedicalHistoryDTO> Post([FromBody] MedicalHistorySimplifiedDTO value)
         {
             try
             {
@@ -75,25 +75,19 @@ namespace MedSys.Api.Controllers
                     return BadRequest(ModelState);
                 }
 
-                var patient = _patientRepository.FindPatientByDetails(value.Patient.FirstName, value.Patient.LastName, value.Patient.DateOfBirth);
+                var patient = _patientRepository.GetById(value.PatientId);
                 if (patient == null)
                 {
-                    patient = _mapper.Map<Patient>(value.Patient);
-                    _patientRepository.Insert(patient);
-                    _patientRepository.Save();
-                    value.Patient.Id = patient.Id;
+                    return NotFound($"Patient with id {value.PatientId} wasn't found.");
                 }
 
-                var disease = _diseaseRepository.GetAll().FirstOrDefault(d => d.Name == value.Disease.Name);
+                var disease = _diseaseRepository.GetById(value.DiseaseId);
                 if (disease == null)
                 {
-                    disease = _mapper.Map<Disease>(value.Disease);
-                    _diseaseRepository.Insert(disease);
-                    _diseaseRepository.Save();
-                    value.Disease.Id = disease.Id;
+                    return NotFound($"Disease with id {value.PatientId} wasn't found.");
                 }
 
-                var existingMedicalHistory = _repository.GetExistingMedicalDocument(value.Patient.Id, value.Disease.Id);
+                var existingMedicalHistory = _repository.GetExistingMedicalDocument(value.PatientId, value.DiseaseId);
                 if (existingMedicalHistory != null)
                 {
                     return Conflict("Such medical history already exists.");
@@ -125,12 +119,7 @@ namespace MedSys.Api.Controllers
                 return NotFound($"Medical history with id {id} wasn't found.");
             }
 
-            existingMedicalHistory.Patient.FirstName = value.Patient.FirstName ?? existingMedicalHistory.Patient.FirstName;
-            existingMedicalHistory.Patient.LastName = value.Patient.LastName ?? existingMedicalHistory.Patient.LastName;
-            existingMedicalHistory.Patient.DateOfBirth = DateOnly.FromDateTime(value.Patient.DateOfBirth);
-            existingMedicalHistory.Patient.Gender = value.Patient.Gender ?? existingMedicalHistory.Patient.Gender;
-            existingMedicalHistory.Patient.Oib = value.Patient.Oib ?? existingMedicalHistory.Patient.Oib;
-            existingMedicalHistory.Disease.Name = value.Disease.Name ?? existingMedicalHistory.Disease.Name;
+            existingMedicalHistory.DiseaseId = value.DiseaseId;
             existingMedicalHistory.StartDate = DateOnly.FromDateTime(value.StartDate);
             existingMedicalHistory.EndDate = value.EndDate.HasValue ? DateOnly.FromDateTime(value.EndDate.Value) : null;
 

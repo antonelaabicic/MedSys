@@ -13,6 +13,7 @@ namespace MedSys.Api.Dtos
 
         [Required]
         public DrugSimplifiedDTO Drug { get; set; } = null!;
+        public int DrugId { get; set; }
 
         [Required]
         [StringLength(100, ErrorMessage = "Dosage can't be longer than 100 characters.")]

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using MedSys.Api.Dtos;
+using MedSys.Api.DTOs;
 using MedSys.BL.DALModels;
 using MedSys.BL.Repositories;
 using Microsoft.AspNetCore.Mvc;
@@ -32,6 +33,20 @@ namespace MedSys.Api.Controllers
             {
                 return StatusCode(500, ex.Message);
             }
+        }
+
+        [HttpGet("{id}")]
+        public ActionResult<DiseaseDTO> Get(int id)
+        {
+            var disease = _repository.GetById(id);
+            if (disease == null)
+            {
+                return NotFound($"Disease with id {id} was not found.");
+            }
+
+            var dto = _mapper.Map<DiseaseDTO>(disease);
+
+            return Ok(dto);
         }
 
         [HttpPost]

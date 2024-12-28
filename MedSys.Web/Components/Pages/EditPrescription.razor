@@ -1,0 +1,91 @@
+﻿@page "/Prescriptions/Edit/{patientId:int}/{prescriptionId:int}"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.DTOs
+@using MedSys.Api.Dtos
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Edit Prescription</PageTitle>
+<h3>Edit Prescription</h3>
+
+<div class="pt-5">
+    <EditForm Model="@currentPrescription" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="container-fluid" style="max-width: 400px;">
+            <div class="mb-3">
+                <label for="DrugId" class="form-label">Drug</label>
+                <InputSelect id="DrugId" class="form-control" @bind-Value="currentPrescription.DrugId">
+                    <option value="">-- Select Drug --</option>
+                    @foreach (var drug in drugs)
+                    {
+                        <option value="@drug.Id">@drug.Name</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="mb-3">
+                <label for="Dosage" class="form-label">Dosage</label>
+                <InputText id="Dosage" class="form-control" @bind-Value="currentPrescription.Dosage" />
+            </div>            
+            <div class="mb-3">
+                <label for="Frequency" class="form-label">Frequency</label>
+                <InputText id="Frequency" class="form-control" @bind-Value="currentPrescription.Frequency" />
+            </div>            
+            <div class="mb-3">
+                <label for="Duration" class="form-label">Duration</label>
+                <InputText id="Duration" class="form-control" @bind-Value="currentPrescription.Duration" />
+            </div>
+            <div class="mb-3">
+                <label for="IssueDate" class="form-label">Issue Date</label>
+                <input id="IssueDate" type="date" class="form-control" @bind="currentPrescription.IssueDate" min="1920-01-01" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-secondary" @onclick="NavigateBack">Cancel</button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter] public int patientId { get; set; }  
+    [Parameter] public int prescriptionId { get; set; }
+    private PrescriptionSimplifiedDTO currentPrescription = new PrescriptionSimplifiedDTO();
+    private List<DrugDTO> drugs = new List<DrugDTO>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentPrescription.PatientId = patientId;
+        drugs = await ApiService.GetAllAsync<DrugDTO>();
+        currentPrescription = await ApiService.GetByIdAsync<PrescriptionSimplifiedDTO>(prescriptionId);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var isUpdated = await ApiService.UpdateAsync<PrescriptionSimplifiedDTO>(currentPrescription.Id, currentPrescription);
+            if (isUpdated)
+            {
+                NavigateBack();
+            }
+            else
+            {
+                Console.WriteLine("Failed to update prescription.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An exception occurred while editing the prescription: {ex.Message}");
+        }
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo($"/Patients/View/{patientId}", forceLoad: false);
+        Navigation.Refresh();
+    }
+}
+ 

@@ -16,7 +16,19 @@ namespace MedSys.BL.Repositories
         }
         public Patient Delete(int id)
         {
-            throw new NotImplementedException();
+            var patient = GetById(id);
+            if (patient == null)
+            {
+                throw new Exception($"Patient with id {id} not found.");
+            }
+
+            _context.Prescriptions.RemoveRange(patient.Prescriptions);
+            _context.Checkups.RemoveRange(patient.Checkups);
+            _context.MedicalHistories.RemoveRange(patient.MedicalHistories);
+
+            _context.Patients.Remove(patient);
+            Save();
+            return patient;
         }
 
         public Patient? FindPatientByDetails(string firstName, string lastName, DateTime dateOfBirth)
@@ -39,12 +51,12 @@ namespace MedSys.BL.Repositories
 
         public IEnumerable<Patient> GetAll()
         {
-            throw new NotImplementedException();
+            return _context.Patients.ToList();
         }
 
         public Patient? GetById(int id)
         {
-            throw new NotImplementedException();
+            return _context.Patients.FirstOrDefault(p => p.Id == id);
         }
 
         public void Insert(Patient entity)
@@ -61,7 +73,5 @@ namespace MedSys.BL.Repositories
         {
             _context.Patients.Update(entity);
         }
-
-
     }
 }

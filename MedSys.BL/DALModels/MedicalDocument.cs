@@ -17,9 +17,7 @@ public partial class MedicalDocument
 
     public string? Notes { get; set; }
 
-    public string? FilePath { get; set; }
-
-    public byte[]? FileData { get; set; }
+    public string? FileKey { get; set; }
 
     public virtual Checkup Checkup { get; set; } = null!;
 }

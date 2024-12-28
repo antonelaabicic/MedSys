@@ -1,0 +1,126 @@
+﻿@page "/MedicalDocuments/Edit/{patientId:int}/{checkupId:int}/{medicalDocumentId:int}"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.DTOs
+@using MedSys.Api.Dtos
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Edit Medical Document</PageTitle>
+<h3>Edit Medical Document</h3>
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="pt-5">
+        <EditForm Model="currentMedicalDocument" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="container-fluid" style="max-width: 400px;">
+                <div class="mb-3">
+                    <label for="title" class="form-label">Title</label>
+                    <InputText id="title" class="form-control" @bind-Value="currentMedicalDocument.Title" />
+                </div>
+                <div class="mb-3">
+                    <label for="text" class="form-label">Text</label>
+                    <InputTextArea id="text" class="form-control" @bind-Value="currentMedicalDocument.Text" />
+                </div>
+                <div class="mb-3">
+                    <label for="notes" class="form-label">Notes</label>
+                    <InputTextArea id="notes" class="form-control" @bind-Value="currentMedicalDocument.Notes" />
+                </div>
+                <div class="mb-3">
+                    <label for="file" class="form-label">Upload File</label>
+                    <InputFile OnChange="HandleFileUpload" />
+                </div>
+                <button type="submit" class="btn btn-success">Save</button>
+                <button type="button" class="btn btn-secondary" @onclick="NavigateBack">Cancel</button>
+            </div>
+        </EditForm>
+    </div>
+}
+
+@code {
+    [Parameter] public int patientId { get; set; }
+    [Parameter] public int checkupId { get; set; }
+    [Parameter] public int medicalDocumentId { get; set; }
+
+    private MedicalDocumentDTO currentMedicalDocument = new MedicalDocumentDTO();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            currentMedicalDocument = await ApiService.GetByIdAsync<MedicalDocumentDTO>(medicalDocumentId);
+            if (currentMedicalDocument == null)
+            {
+                NavigateBack();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred while fetching the document: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleFileUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            using var stream = new MemoryStream();
+            await file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024).CopyToAsync(stream); 
+            currentMedicalDocument.FileContent = stream.ToArray();
+            currentMedicalDocument.FileName = file.Name; 
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var content = new MultipartFormDataContent();
+
+            content.Add(new StringContent(currentMedicalDocument.Title ?? ""), "Title");
+            content.Add(new StringContent(currentMedicalDocument.Text ?? ""), "Text");
+            content.Add(new StringContent(currentMedicalDocument.Notes ?? ""), "Notes");
+            content.Add(new StringContent(currentMedicalDocument.CheckupId.ToString()), "CheckupId");
+
+            if (currentMedicalDocument.FileContent != null && !string.IsNullOrEmpty(currentMedicalDocument.FileName))
+            {
+                var fileContent = new ByteArrayContent(currentMedicalDocument.FileContent);
+                fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+                content.Add(fileContent, "file", currentMedicalDocument.FileName);
+            }
+
+            var response = await ApiService.EditMedicalDocumentAsync(medicalDocumentId, content);
+            if (response.IsSuccessStatusCode)
+            {
+                NavigateBack();
+            }
+            else
+            {
+                Console.WriteLine($"Failed to update the medical document: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred: {ex.Message}");
+        }
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo($"/Checkups/View/{patientId}/{checkupId}", forceLoad: false);
+    }
+}

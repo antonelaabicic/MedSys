@@ -125,12 +125,9 @@ public partial class PostgresContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("created_at");
-            entity.Property(e => e.FilePath)
-                .HasMaxLength(255)
-                .HasColumnName("file_path");
-            entity.Property(e => e.FileData).HasColumnName("filedata");
             entity.Property(e => e.Notes).HasColumnName("notes");
             entity.Property(e => e.Text).HasColumnName("text");
+            entity.Property(e => e.FileKey).HasColumnName("file_key");
             entity.Property(e => e.Title)
                 .HasMaxLength(255)
                 .HasColumnName("title");

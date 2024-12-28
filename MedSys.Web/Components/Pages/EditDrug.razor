@@ -1,0 +1,57 @@
+﻿@page "/Drugs/Edit/{id:int}"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.Dtos
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Edit Checkup Type</PageTitle>
+<h3>Edit Checkup Type</h3>
+
+<div class="pt-5">
+    <EditForm Model="@currentDrug" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="container-fluid" style="max-width: 500px;">
+            <div class="mb-3">
+                <label for="Name" class="form-label">Name</label>
+                <InputText id="Name" class="form-control" @bind-Value="currentDrug.Name" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-secondary" @onclick="NavigateBack">Cancel</button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    private DrugDTO currentDrug = new DrugDTO();
+    [Parameter] public int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentDrug = await ApiService.GetByIdAsync<DrugDTO>(Id);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var isUpdated = await ApiService.UpdateAsync<DrugDTO>(currentDrug.Id, currentDrug);
+        if (isUpdated)
+        {
+            NavigateBack();
+        }
+        else
+        {
+            Console.WriteLine("Failed to update drug.");
+        }
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo("/Drugs", forceLoad: false);
+        Navigation.Refresh();
+    }
+}
+ 

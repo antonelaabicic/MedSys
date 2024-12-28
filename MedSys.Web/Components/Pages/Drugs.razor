@@ -1,0 +1,113 @@
+﻿@page "/Drugs"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.Dtos
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Drugs</PageTitle>
+<h3>Drugs</h3>
+
+<div class="d-flex justify-content-between">
+    <div class="ms-auto">
+        <button class="btn btn-success" @onclick="NavigateToAddDrug">Add Drug</button>
+    </div>
+</div>
+
+<div class="container-fluid pt-3">
+    <div class="table-responsive">
+        <table class="table table-bordered text-center">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Name</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var drug in drugs)
+                {
+                    <tr>
+                        <td>@drug.Id</td>
+                        <td>@drug.Name</td>
+                        <td>
+                            <button class="btn btn-primary btn-sm" @onclick="() => EditDrug(drug.Id)">Edit</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => ShowDeleteDrug(drug)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (showDeleteConfirmation)
+{
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" @onclick="CloseDeleteConfirmation"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete @currentDrug.Name?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDeleteConfirmation">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmDeleteDrug">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private List<DrugDTO> drugs = new List<DrugDTO>();
+    private DrugDTO currentDrug = new DrugDTO();
+    private bool showDeleteConfirmation = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        drugs = await ApiService.GetAllAsync<DrugDTO>();
+        drugs = drugs.OrderBy(ct => ct.Id).ToList();
+    }
+
+    private void NavigateToAddDrug()
+    {
+        Navigation.NavigateTo("/Drugs/Add", forceLoad: false);
+    }
+
+    private void EditDrug(int drugId)
+    {
+        Navigation.NavigateTo($"/Drugs/Edit/{drugId}", forceLoad: false);
+    }
+
+    private void ShowDeleteDrug(DrugDTO drug)
+    {
+        currentDrug = drug;
+        showDeleteConfirmation = true;
+    }
+
+    private void CloseDeleteConfirmation()
+    {
+        showDeleteConfirmation = false;
+    }
+
+    private async Task ConfirmDeleteDrug()
+    {
+        var isDeleted = await ApiService.DeleteAsync<DrugDTO>(currentDrug.Id);
+
+        if (isDeleted) 
+        {
+            drugs.Remove(currentDrug);
+        }
+        else
+        {
+            Console.WriteLine("Failed to delete drug.");
+        }
+        showDeleteConfirmation = false;
+    }
+}

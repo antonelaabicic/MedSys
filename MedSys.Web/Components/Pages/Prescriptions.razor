@@ -1,0 +1,59 @@
+﻿@page "/Prescriptions"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.Dtos
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Prescriptions</PageTitle>
+<h3>Prescriptions</h3>
+
+<div class="container-fluid pt-3">
+    <div class="table-responsive">
+        <table class="table table-bordered text-center">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Patient</th>
+                    <th>Drug</th>
+                    <th>Dosage</th>
+                    <th>Frequency</th>
+                    <th>Duration</th>
+                    <th>IssueDate</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var checkup in prescriptions)
+                {
+                    <tr>
+                        <td>@checkup.Id</td>
+                        <td>@checkup.Patient.FirstName @checkup.Patient.LastName (@checkup.Patient.Oib)</td>
+                        <td>@checkup.Drug.Name</td>
+                        <td>@checkup.Dosage</td>
+                        <td>@checkup.Frequency</td>
+                        <td>@checkup.Duration</td>
+                        <td>@checkup.IssueDate.ToString("dd.MM.yyyy.")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private List<PrescriptionDTO> prescriptions = new List<PrescriptionDTO>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            prescriptions = await ApiService.GetAllAsync<PrescriptionDTO>();
+            prescriptions = prescriptions.OrderBy(c => c.Id).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading prescriptions: {ex.Message}");
+        }
+    }
+}

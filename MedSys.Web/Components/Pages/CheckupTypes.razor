@@ -1,0 +1,115 @@
+﻿@page "/CheckupTypes"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.DTOs
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Checkup Types</PageTitle>
+<h3>Checkup Types</h3>
+
+<div class="d-flex justify-content-between">
+    <div class="ms-auto">
+        <button class="btn btn-success" @onclick="NavigateToAddCheckupType">Add Checkup Type</button>
+    </div>
+</div>
+
+<div class="container-fluid pt-3">
+    <div class="table-responsive">
+        <table class="table table-bordered text-center">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Name</th>
+                    <th>Code</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var checkupType in checkupTypes)
+                {
+                    <tr>
+                        <td>@checkupType.Id</td>
+                        <td>@checkupType.Name</td>
+                        <td>@checkupType.Code</td>
+                        <td>
+                            <button class="btn btn-primary btn-sm" @onclick="() => EditCheckupType(checkupType.Id)">Edit</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => ShowDeleteConfirmation(checkupType)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (showDeleteConfirmation)
+{
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" @onclick="CloseDeleteConfirmation"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete @currentCheckupType.Name (@currentCheckupType.Code)?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDeleteConfirmation">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmDeleteCheckupType">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private List<CheckupTypeDTO> checkupTypes = new List<CheckupTypeDTO>();
+    private CheckupTypeDTO currentCheckupType = new CheckupTypeDTO();
+    private bool showDeleteConfirmation = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        checkupTypes = await ApiService.GetAllAsync<CheckupTypeDTO>();
+        checkupTypes = checkupTypes.OrderBy(ct => ct.Id).ToList();
+    }
+
+    private void NavigateToAddCheckupType()
+    {
+        Navigation.NavigateTo("/CheckupTypes/Add", forceLoad: false);
+    }
+
+    private void EditCheckupType(int checkupTypeId)
+    {
+        Navigation.NavigateTo($"/CheckupTypes/Edit/{checkupTypeId}", forceLoad: false);
+    }
+
+    private void ShowDeleteConfirmation(CheckupTypeDTO checkupType)
+    {
+        currentCheckupType = checkupType;
+        showDeleteConfirmation = true;
+    }
+
+    private void CloseDeleteConfirmation()
+    {
+        showDeleteConfirmation = false;
+    }
+
+    private async Task ConfirmDeleteCheckupType()
+    {
+        var isDeleted = await ApiService.DeleteAsync<CheckupTypeDTO>(currentCheckupType.Id);
+
+        if (isDeleted) 
+        {
+            checkupTypes.Remove(currentCheckupType);
+        }
+        else
+        {
+            Console.WriteLine("Failed to delete checkup type.");
+        }
+        showDeleteConfirmation = false;
+    }
+}

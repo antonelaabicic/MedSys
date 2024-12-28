@@ -1,0 +1,111 @@
+﻿@page "/MedicalDocuments/Add/{patientId:int}/{checkupId:int}"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.DTOs
+@using MedSys.Api.Dtos
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Add Medical Document</PageTitle>
+<h3>Add Medical Document</h3>
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="pt-5">
+        <EditForm Model="newMedicalDocument" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="container-fluid" style="max-width: 400px;">
+                <div class="mb-3">
+                    <label for="title" class="form-label">Title</label>
+                    <InputText id="title" class="form-control" @bind-Value="newMedicalDocument.Title" />
+                </div>
+                <div class="mb-3">
+                    <label for="text" class="form-label">Text</label>
+                    <InputTextArea id="text" class="form-control" @bind-Value="newMedicalDocument.Text" />
+                </div>
+                <div class="mb-3">
+                    <label for="notes" class="form-label">Notes</label>
+                    <InputTextArea id="notes" class="form-control" @bind-Value="newMedicalDocument.Notes" />
+                </div>
+                <div class="mb-3">
+                    <label for="file" class="form-label">Upload File</label>
+                    <InputFile OnChange="HandleFileUpload" />
+                </div>
+                <button type="submit" class="btn btn-success">Save</button>
+                <button type="button" class="btn btn-secondary" @onclick="NavigateBack">Cancel</button>
+            </div>
+        </EditForm>
+    </div>
+}
+
+@code {
+    [Parameter] public int patientId { get; set; }
+    [Parameter] public int checkupId { get; set; }
+
+    private MedicalDocumentDTO newMedicalDocument = new MedicalDocumentDTO();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        newMedicalDocument.CheckupId = checkupId;
+        isLoading = false;
+    }
+
+    private async Task HandleFileUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            using var stream = new MemoryStream();
+            await file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024).CopyToAsync(stream); 
+            newMedicalDocument.FileContent = stream.ToArray(); 
+            newMedicalDocument.FileName = file.Name; 
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var content = new MultipartFormDataContent();
+
+            content.Add(new StringContent(newMedicalDocument.Title ?? ""), "Title");
+            content.Add(new StringContent(newMedicalDocument.Text ?? ""), "Text");
+            content.Add(new StringContent(newMedicalDocument.Notes ?? ""), "Notes");
+            content.Add(new StringContent(newMedicalDocument.CheckupId.ToString()), "CheckupId");
+
+            if (newMedicalDocument.FileContent != null && !string.IsNullOrEmpty(newMedicalDocument.FileName))
+            {
+                var fileContent = new ByteArrayContent(newMedicalDocument.FileContent);
+                fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+                content.Add(fileContent, "file", newMedicalDocument.FileName);
+            }
+
+            var response = await ApiService.CreateMedicalDocumentAsync(content); 
+            if (response.IsSuccessStatusCode)
+            {
+                NavigateBack(); 
+            }
+            else
+            {
+                Console.WriteLine($"Failed to save the medical document: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred: {ex.Message}");
+        }
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo($"/Checkups/View/{patientId}/{checkupId}", forceLoad: false);
+    }
+}

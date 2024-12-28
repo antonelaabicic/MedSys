@@ -1,0 +1,51 @@
+﻿@page "/Diseases/Add"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.Dtos
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Add Disease</PageTitle>
+<h3>Add Disease</h3>
+
+<div class="pt-5">
+    <EditForm Model="@newDisease" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="container-fluid" style="max-width: 400px;">
+            <div class="mb-3">
+                <label for="Name" class="form-label">Name</label>
+                <InputText id="Name" class="form-control" @bind-Value="newDisease.Name" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-secondary" @onclick="NavigateBack">Cancel</button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    private DiseaseDTO newDisease = new DiseaseDTO();
+
+    private async Task HandleValidSubmit()
+    {
+        var result = await ApiService.CreateAsync<DiseaseDTO>(newDisease);
+        if (result.IsSuccessStatusCode)
+        {
+            NavigateBack();
+        }
+        else
+        {
+            Console.WriteLine("Failed to add disease.");
+        }
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo("/Diseases", forceLoad: false);
+        Navigation.Refresh();
+    }
+}
+ 

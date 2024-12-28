@@ -1,0 +1,94 @@
+﻿@page "/MedicalHistories/Add/{id:int}"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.DTOs
+@using MedSys.Api.Dtos
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Add Medical History</PageTitle>
+<h3>Add Medical History</h3>
+
+<div class="pt-5">
+    <EditForm Model="@newMedicalHistory" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="container-fluid" style="max-width: 400px;">
+            <div class="mb-3">
+                <label for="DiseaseId" class="form-label">Disease</label>
+                <InputSelect id="DiseaseId" class="form-control" @bind-Value="newMedicalHistory.DiseaseId">
+                    <option value="">-- Select Disease --</option>
+                    @foreach (var disease in diseases)
+                    {
+                        <option value="@disease.Id">@disease.Name</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="mb-3">
+                <label for="StartDate" class="form-label">Start Date</label>
+                <input id="StartDate" type="date" class="form-control" @bind="newMedicalHistory.StartDate" min="1920-01-01" />
+            </div>
+            <div class="mb-3">
+                <label for="EndDate" class="form-label">End Date</label>
+                <input id="EndDate" type="date" class="form-control" @bind="newMedicalHistory.EndDate" min="1920-01-01" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(dateErrorMessage))
+            {
+                <div class="text-danger">@dateErrorMessage</div>
+            }
+
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-secondary" @onclick="NavigateBack">Cancel</button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter] public int id { get; set; }
+    private MedicalHistorySimplifiedDTO newMedicalHistory = new MedicalHistorySimplifiedDTO();
+    private List<DiseaseDTO> diseases = new List<DiseaseDTO>();
+    private string dateErrorMessage = string.Empty; 
+
+    protected override async Task OnInitializedAsync()
+    {
+        newMedicalHistory.PatientId = id;
+        diseases = await ApiService.GetAllAsync<DiseaseDTO>();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            if (newMedicalHistory.StartDate >= newMedicalHistory.EndDate)
+            {
+                dateErrorMessage = "Start date must be earlier than end date.";
+                return; 
+            }
+
+            dateErrorMessage = string.Empty;
+
+            var result = await ApiService.CreateAsync<MedicalHistorySimplifiedDTO>(newMedicalHistory);
+            if (result.IsSuccessStatusCode)
+            {
+                NavigateBack();
+            }
+            else
+            {
+                Console.WriteLine("Failed to add medical history.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An exception occurred while adding the medical history: {ex.Message}");
+        }
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo($"/Patients/View/{id}", forceLoad: false);
+        Navigation.Refresh();
+    }
+}

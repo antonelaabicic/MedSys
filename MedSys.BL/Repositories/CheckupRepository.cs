@@ -55,7 +55,7 @@ namespace MedSys.BL.Repositories
             _context.SaveChanges();
         }
 
-        public IEnumerable<Checkup> GetAllByPatientId(int patientId)
+        public IEnumerable<Checkup> GetCheckupsByPatientId(int patientId)
         {
             return _context.Checkups.Where(c => c.PatientId == patientId).ToList();
         }

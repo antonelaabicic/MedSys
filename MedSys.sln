@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MedSys.BL", "MedSys.BL\MedS
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MedSys.Api", "MedSys.Api\MedSys.Api.csproj", "{76402007-D3DF-4514-9B16-B0AD245575EB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MedSys.Web", "MedSys.Web\MedSys.Web.csproj", "{74558C20-0A11-4E64-9AB8-8B6AC7CEF516}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MedSys.Web", "MedSys.Web\MedSys.Web.csproj", "{74558C20-0A11-4E64-9AB8-8B6AC7CEF516}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

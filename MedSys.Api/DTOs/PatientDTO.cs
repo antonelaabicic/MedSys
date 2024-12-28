@@ -5,7 +5,6 @@ namespace MedSys.Api.Dtos
 {
     public class PatientDTO
     {
-        [JsonIgnore]
         public int Id { get; set; }
 
         [Required]

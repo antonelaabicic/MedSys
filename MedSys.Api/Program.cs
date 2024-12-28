@@ -25,7 +25,7 @@ builder.Services.AddScoped<IMedicalHistoryRepository, MedicalHistoryRepository>(
 builder.Services.AddScoped<IDrugRepository, DrugRepository>();
 builder.Services.AddScoped<IRepository<Disease>, DiseaseRepository>();
 builder.Services.AddScoped<IRepositoryFactory, RepositoryFactory>();
-builder.Services.AddScoped<IZipService, ZipService>();
+builder.Services.AddSingleton<IMinioService, MinioService>();
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 

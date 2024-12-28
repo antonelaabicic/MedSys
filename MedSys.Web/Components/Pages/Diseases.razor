@@ -1,0 +1,114 @@
+﻿@page "/Diseases"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.DTOs
+@using MedSys.Api.Dtos
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Diseases</PageTitle>
+<h3>Diseases</h3>
+
+<div class="d-flex justify-content-between">
+    <div class="ms-auto">
+        <button class="btn btn-success" @onclick="NavigateToAddDisease">Add Disease</button>
+    </div>
+</div>
+
+<div class="container-fluid pt-3">
+    <div class="table-responsive">
+        <table class="table table-bordered text-center">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Name</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var disease in diseases)
+                {
+                    <tr>
+                        <td>@disease.Id</td>
+                        <td>@disease.Name</td>
+                        <td>
+                            <button class="btn btn-primary btn-sm" @onclick="() => EditDisease(disease.Id)">Edit</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => ShowDeleteDisease(disease)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (showDeleteConfirmation)
+{
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" @onclick="CloseDeleteConfirmation"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete @currentDisease.Name?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDeleteConfirmation">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmDeleteCheckupType">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private List<DiseaseDTO> diseases = new List<DiseaseDTO>();
+    private DiseaseDTO currentDisease = new DiseaseDTO();
+    private bool showDeleteConfirmation = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        diseases = await ApiService.GetAllAsync<DiseaseDTO>();
+        diseases = diseases.OrderBy(ct => ct.Id).ToList();
+    }
+
+    private void NavigateToAddDisease()
+    {
+        Navigation.NavigateTo("/Diseases/Add", forceLoad: false);
+    }
+
+    private void EditDisease(int diseaseId)
+    {
+        Navigation.NavigateTo($"/Diseases/Edit/{diseaseId}", forceLoad: false);
+    }
+
+    private void ShowDeleteDisease(DiseaseDTO disease)
+    {
+        currentDisease = disease;
+        showDeleteConfirmation = true;
+    }
+
+    private void CloseDeleteConfirmation()
+    {
+        showDeleteConfirmation = false;
+    }
+
+    private async Task ConfirmDeleteCheckupType()
+    {
+        var isDeleted = await ApiService.DeleteAsync<CheckupTypeDTO>(currentDisease.Id);
+
+        if (isDeleted) 
+        {
+            diseases.Remove(currentDisease);
+        }
+        else
+        {
+            Console.WriteLine("Failed to delete disease.");
+        }
+        showDeleteConfirmation = false;
+    }
+}

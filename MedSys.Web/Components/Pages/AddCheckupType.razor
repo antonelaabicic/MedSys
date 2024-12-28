@@ -1,0 +1,55 @@
+﻿@page "/CheckupTypes/Add"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.DTOs
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Add Checkup Type</PageTitle>
+<h3>Add Checkup Type</h3>
+
+<div class="pt-5">
+    <EditForm Model="@newCheckupType" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="container-fluid" style="max-width: 500px;">
+            <div class="mb-3">
+                <label for="Name" class="form-label">Name</label>
+                <InputText id="Name" class="form-control" @bind-Value="newCheckupType.Name" />
+            </div>
+            <div class="mb-3">
+                <label for="Code" class="form-label">Code</label>
+                <InputText id="Code" class="form-control" @bind-Value="newCheckupType.Code" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-secondary" @onclick="NavigateBack">Cancel</button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    private CheckupTypeDTO newCheckupType = new CheckupTypeDTO();
+
+    private async Task HandleValidSubmit()
+    {
+        var result = await ApiService.CreateAsync<CheckupTypeDTO>(newCheckupType);
+        if (result.IsSuccessStatusCode)
+        {
+            NavigateBack();
+        }
+        else
+        {
+            Console.WriteLine("Failed to add checkup type.");
+        }
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo("/CheckupTypes", forceLoad: false);
+        Navigation.Refresh();
+    }
+}
+ 

@@ -1,0 +1,67 @@
+﻿@page "/Patients/Add"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.Dtos
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Add Patient</PageTitle>
+<h3>Add Patient</h3>
+
+<div class="pt-5">
+    <EditForm Model="@newPatient" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="container-fluid" style="max-width: 400px;">
+            <div class="mb-3">
+                <label for="FirstName" class="form-label">First Name</label>
+                <InputText id="FirstName" class="form-control" @bind-Value="newPatient.FirstName" />
+            </div>            
+            <div class="mb-3">
+                <label for="LastName" class="form-label">Last Name</label>
+                <InputText id="LastName" class="form-control" @bind-Value="newPatient.LastName" />
+            </div>
+            <div class="mb-3">
+                <label for="DateOfBirth" class="form-label">Date Of Birth</label>
+                <input id="DateOfBirth" type="date" class="form-control" @bind="newPatient.DateOfBirth" min="1920-01-01" />
+            </div>
+            <div class="mb-3">
+                <label for="Gender" class="form-label">Gender</label>
+                <InputText id="Gender" class="form-control" @bind-Value="newPatient.Gender" />
+            </div>            
+            <div class="mb-3">
+                <label for="Oib" class="form-label">OIB</label>
+                <InputText id="Oib" class="form-control" @bind-Value="newPatient.Oib" />
+            </div>            
+
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-secondary" @onclick="NavigateBack">Cancel</button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    private PatientDTO newPatient = new PatientDTO();
+
+    private async Task HandleValidSubmit()
+    {
+        var result = await ApiService.CreateAsync<PatientDTO>(newPatient);
+        if (result.IsSuccessStatusCode)
+        {
+            NavigateBack();
+        }
+        else
+        {
+            Console.WriteLine("Failed to add patient.");
+        }
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo("/Patients", forceLoad: false);
+        Navigation.Refresh();
+    }
+}
+ 

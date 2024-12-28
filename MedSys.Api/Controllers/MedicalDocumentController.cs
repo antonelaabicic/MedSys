@@ -5,6 +5,8 @@ using MedSys.Api.Services;
 using MedSys.BL.DALModels;
 using MedSys.BL.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using System.Reflection.Metadata;
+using static MedSys.Api.Services.ApiRoutes;
 
 namespace MedSys.Api.Controllers
 {
@@ -16,26 +18,36 @@ namespace MedSys.Api.Controllers
         private readonly ICheckupRepository _checkupRepository;
         private readonly ICheckupTypeRepository _checkupTypeRepository;
         private readonly IPatientRepository _patientRepository;
-        private readonly IZipService _zipService;
+        private readonly IMinioService _minioService;
         private readonly IMapper _mapper;
 
-        public MedicalDocumentController(IRepositoryFactory repositoryFactory, IZipService zipService, IMapper mapper)
+        public MedicalDocumentController(IRepositoryFactory repositoryFactory, IMinioService minioService, IMapper mapper)
         {
             _repository = repositoryFactory.GetRepository<IMedicalDocumentRepository>();
             _checkupRepository = repositoryFactory.GetRepository<ICheckupRepository>();
             _checkupTypeRepository = repositoryFactory.GetRepository<ICheckupTypeRepository>();
             _patientRepository = repositoryFactory.GetRepository<IPatientRepository>();
-            _zipService = zipService;
+            _minioService = minioService;
             _mapper = mapper;
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<MedicalDocumentDTO>> Get()
+        public async Task<ActionResult<IEnumerable<MedicalDocumentDTO>>> Get()
         {
             try
             {
                 var medicalDocuments = _repository.GetAll();
-                var medicalDocumentsDtos = _mapper.Map<IEnumerable<MedicalDocumentDTO>>(medicalDocuments);
+                var medicalDocumentsDtos = new List<MedicalDocumentDTO>();
+
+                foreach (var document in medicalDocuments)
+                {
+                    var documentDto = _mapper.Map<MedicalDocumentDTO>(document);
+                    documentDto.FileUrl = !string.IsNullOrEmpty(document.FileKey)
+                        ? await _minioService.GeneratePresignedFileUrl(document.FileKey, 3600)
+                        : null;
+                    medicalDocumentsDtos.Add(documentDto);
+                }
+
                 return Ok(medicalDocumentsDtos);
             }
             catch (Exception ex)
@@ -45,83 +57,23 @@ namespace MedSys.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        public ActionResult<MedicalDocumentDTO> Get(int id)
-        {
-            var medicalDocument = _repository.GetById(id);
-            if (medicalDocument == null)
-            {
-                return NotFound($"Medical document with id {id} was not found.");
-            }
-
-            var dto = _mapper.Map<MedicalDocumentDTO>(medicalDocument);
-            if (!string.IsNullOrEmpty(medicalDocument.FilePath))
-            {
-                dto.FileData = Convert.ToBase64String(medicalDocument.FileData);
-            }
-            return Ok(dto);
-        }
-
-        [HttpGet("download/{id}")]
-        public IActionResult Download(int id)
-        {
-            var medicalDocument = _repository.GetById(id);
-            if (medicalDocument == null || medicalDocument.FileData == null)
-            {
-                return NotFound($"Medical document with id {id} was not found or file data is missing.");
-            }
-
-            using (var memoryStream = new MemoryStream(medicalDocument.FileData))
-            {
-                return File(memoryStream.ToArray(), "application/octet-stream", Path.GetFileName(medicalDocument.FilePath));
-            }
-        }
-
-        [HttpPost]
-        public ActionResult<MedicalDocumentDTO> Post([FromBody] MedicalDocumentDTO value)
+        public async Task<ActionResult<MedicalDocumentDTO>> Get(int id)
         {
             try
             {
-                if (!ModelState.IsValid)
+                var medicalDocument = _repository.GetById(id);
+                if (medicalDocument == null)
                 {
-                    return BadRequest(ModelState);
+                    return NotFound($"Medical document with id {id} was not found.");
                 }
 
-                var checkupType = _checkupTypeRepository.FindCheckupTypeByCode(value.Checkup.CheckupType.Code);
-                if (checkupType == null)
+                var dto = _mapper.Map<MedicalDocumentDTO>(medicalDocument);
+                if (!string.IsNullOrEmpty(medicalDocument.FileKey))
                 {
-                    return NotFound($"Checkup type with code {value.Checkup.CheckupType.Code} does not exist.");
+                    dto.FileUrl = await _minioService.GeneratePresignedFileUrl(medicalDocument.FileKey, 3600);
                 }
 
-                var patient = _patientRepository.FindPatientByDetails(value.Checkup.Patient.FirstName, value.Checkup.Patient.LastName, value.Checkup.Patient.DateOfBirth);
-                if (patient == null)
-                {
-                    patient = _mapper.Map<Patient>(value.Checkup.Patient);
-                    _patientRepository.Insert(patient);
-                    _patientRepository.Save();
-                    value.Checkup.Patient.Id = patient.Id;
-                }
-
-                var existingCheckup = _checkupRepository.GetExistingCheckup(patient.Id, checkupType.Id, DateOnly.FromDateTime(value.Checkup.CheckupDateTime));
-
-                var medicalDocument = _mapper.Map<MedicalDocument>(value);
-                if (existingCheckup != null)
-                {
-                    medicalDocument.Checkup = existingCheckup;
-                }
-                else 
-                {
-                    medicalDocument.Checkup.CheckupType = checkupType;
-                    medicalDocument.Checkup.Patient = patient;
-                }
-                medicalDocument.CreatedAt = DateTime.Now;
-
-                _repository.Insert(medicalDocument);
-                _repository.Save();
-
-                var savedDocument = _repository.GetById(medicalDocument.Id);
-                var resultDTO = _mapper.Map<MedicalDocumentDTO>(savedDocument);
-
-                return Ok(resultDTO);
+                return Ok(dto);
             }
             catch (Exception ex)
             {
@@ -129,39 +81,112 @@ namespace MedSys.Api.Controllers
             }
         }
 
-        [HttpPost("{id}/upload")]
-        public async Task<IActionResult> UploadFile(int id, IFormFile file)
+        [HttpGet("by_checkup/{checkupId}")]
+        public async Task<ActionResult<IEnumerable<MedicalDocumentDTO>>> GetDocumentsByCheckup(int checkupId)
         {
-            var medicalDocument = _repository.GetById(id);
-            if (medicalDocument == null)
+            try
             {
-                return NotFound($"Medical document with id {id} was not found.");
-            }
+                var documents = _repository.GetMedicalDocumentByCheckupId(checkupId);
+                var documentsDtos = new List<MedicalDocumentDTO>();
 
-            if (file != null && file.Length > 0)
-            {
-                var allowedExtensions = new[] { ".pdf", ".txt", ".doc", ".docx" };
-                var fileExtension = Path.GetExtension(file.FileName).ToLower();
-
-                if (!allowedExtensions.Contains(fileExtension))
+                foreach (var document in documents)
                 {
-                    return BadRequest($"Invalid file type. Only {string.Join(", ", allowedExtensions)} are allowed.");
+                    var documentDto = _mapper.Map<MedicalDocumentDTO>(document);
+                    documentDto.FileUrl = !string.IsNullOrEmpty(document.FileKey)
+                        ? await _minioService.GeneratePresignedFileUrl(document.FileKey, 3600)
+                        : null;
+                    documentsDtos.Add(documentDto);
                 }
 
-                using var memoryStream = new MemoryStream();
-                await file.CopyToAsync(memoryStream);
-                medicalDocument.FileData = memoryStream.ToArray();
-                medicalDocument.FilePath = file.FileName; 
+                return Ok(documentsDtos);
             }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }        
+        
+        [HttpGet("by_patient/{patientId}")]
+        public async Task<ActionResult<IEnumerable<MedicalDocumentDTO>>> GetDocumentsByPatient(int patientId)
+        {
+            try
+            {
+                var documents = _repository.GetMedicalDocumentByPatientId(patientId);
+                var documentsDtos = new List<MedicalDocumentDTO>();
 
-            _repository.Update(medicalDocument);
-            _repository.Save();
+                foreach (var document in documents)
+                {
+                    var documentDto = _mapper.Map<MedicalDocumentDTO>(document);
+                    documentDto.FileUrl = !string.IsNullOrEmpty(document.FileKey)
+                        ? await _minioService.GeneratePresignedFileUrl(document.FileKey, 3600)
+                        : null;
+                    documentsDtos.Add(documentDto);
+                }
 
-            return Ok(new { message = $"{medicalDocument.FilePath} uploaded successfully." });
+                return Ok(documentsDtos);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPost]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Post([FromForm] MedicalDocumentDTO documentDto, IFormFile file)
+        {
+            try
+            {
+                if (file == null || file.Length == 0)
+                {
+                    return BadRequest("No file provided.");
+                }
+
+                var allowedExtensions = new[] { ".pdf", ".txt", ".doc", ".docx" };
+                var fileExtension = Path.GetExtension(file.FileName).ToLower();
+                if (!allowedExtensions.Contains(fileExtension))
+                {
+                    return BadRequest($"Invalid file type. Allowed types: {string.Join(", ", allowedExtensions)}.");
+                }
+
+                if (file.Length > 5 * 1024 * 1024)
+                {
+                    return BadRequest($"File {file.FileName} exceeds the size limit of 5MB.");
+                }
+
+                var checkup = _checkupRepository.GetById(documentDto.CheckupId);
+                if (checkup == null)
+                {
+                    return NotFound($"Checkup with ID {documentDto.CheckupId} does not exist.");
+                }
+
+                var fileKey = $"checkups/{documentDto.CheckupId}/{Guid.NewGuid()}{fileExtension}";
+                using var fileStream = file.OpenReadStream();
+                await _minioService.UploadFile(fileKey, fileStream);
+
+                var medicalDocument = _mapper.Map<MedicalDocument>(documentDto);
+                medicalDocument.FileKey = fileKey;
+                medicalDocument.CreatedAt = DateTime.Now;
+                medicalDocument.Checkup = checkup;
+
+                _repository.Insert(medicalDocument);
+                _repository.Save();
+
+                var savedDocument = _repository.GetById(medicalDocument.Id);
+                var resultDto = _mapper.Map<MedicalDocumentDTO>(savedDocument);
+                resultDto.FileUrl = await _minioService.GeneratePresignedFileUrl(fileKey, 3600);
+
+                return Ok(resultDto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while creating the medical document: {ex.Message}");
+            }
         }
 
         [HttpPut("{id}")]
-        public ActionResult<MedicalDocumentDTO> Put(int id, [FromBody] MedicalDocumentDTO value)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> Put(int id, [FromForm] MedicalDocumentDTO documentDto, IFormFile file)
         {
             try
             {
@@ -172,130 +197,73 @@ namespace MedSys.Api.Controllers
                     return NotFound($"Medical document with id {id} wasn't found.");
                 }
 
-                existingMDoc.Checkup.Patient.FirstName = value.Checkup.Patient.FirstName ?? existingMDoc.Checkup.Patient.FirstName;
-                existingMDoc.Checkup.Patient.LastName = value.Checkup.Patient.LastName ?? existingMDoc.Checkup.Patient.LastName;
-                existingMDoc.Checkup.Patient.DateOfBirth = DateOnly.FromDateTime(value.Checkup.Patient.DateOfBirth);
-                existingMDoc.Checkup.Patient.Gender = value.Checkup.Patient.Gender ?? existingMDoc.Checkup.Patient.Gender;
-                existingMDoc.Checkup.Patient.Oib = value.Checkup.Patient.Oib ?? existingMDoc.Checkup.Patient.Oib;
-                existingMDoc.Checkup.CheckupType.Code = value.Checkup.CheckupType.Code ?? existingMDoc.Checkup.CheckupType.Code;
-                existingMDoc.Checkup.CheckupType.Name = value.Checkup.CheckupType.Name ?? existingMDoc.Checkup.CheckupType.Name;
-                existingMDoc.Checkup.Date = DateOnly.FromDateTime(value.Checkup.CheckupDateTime);
-                existingMDoc.Checkup.Time = TimeOnly.FromDateTime(value.Checkup.CheckupDateTime);
-                existingMDoc.Title = value.Title ?? existingMDoc.Title;
-                existingMDoc.Text = value.Text ?? existingMDoc.Text;
-                existingMDoc.Notes = value.Notes ?? existingMDoc.Notes;
+                if (file != null && file.Length > 0)
+                {
+                    var allowedExtensions = new[] { ".pdf", ".txt", ".doc", ".docx" };
+                    var fileExtension = Path.GetExtension(file.FileName).ToLower();
+
+                    if (!allowedExtensions.Contains(fileExtension))
+                    {
+                        return BadRequest($"Invalid file type. Allowed types: {string.Join(", ", allowedExtensions)}.");
+                    }
+
+                    if (file.Length > 5 * 1024 * 1024)
+                    {
+                        return BadRequest($"File {file.FileName} exceeds the size limit of 5MB.");
+                    }
+
+                    var newFileKey = $"checkups/{documentDto.CheckupId}/{Guid.NewGuid()}{fileExtension}";
+                    using var fileStream = file.OpenReadStream();
+                    await _minioService.UploadFile(newFileKey, fileStream);
+
+                    if (!string.IsNullOrEmpty(existingMDoc.FileKey))
+                    {
+                        await _minioService.DeleteFile(existingMDoc.FileKey);
+                    }
+
+                    existingMDoc.FileKey = newFileKey;
+                }
+
+                existingMDoc.Title = documentDto.Title ?? existingMDoc.Title;
+                existingMDoc.Text = documentDto.Text ?? existingMDoc.Text;
+                existingMDoc.Notes = documentDto.Notes ?? existingMDoc.Notes;
+                existingMDoc.CheckupId = documentDto.CheckupId;
 
                 _repository.Update(existingMDoc);
                 _repository.Save();
 
-                value.Id = existingMDoc.Id;
+                var resultDto = _mapper.Map<MedicalDocumentDTO>(existingMDoc);
+                resultDto.FileUrl = !string.IsNullOrEmpty(existingMDoc.FileKey)
+                    ? await _minioService.GeneratePresignedFileUrl(existingMDoc.FileKey, 3600)
+                    : null;
 
-                return Ok(value);
+                return Ok(resultDto);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, $"An error occurred while updating the medical document: {ex.Message}");
             }
         }
+
 
         [HttpDelete("{id}")]
-        public ActionResult<MedicalDocumentDTO> Delete(int id)
+        public async Task<ActionResult<MedicalDocumentDTO>> Delete(int id)
         {
             try
             {
-                var deletedMedicalDocument = _repository.Delete(id);
-                if (deletedMedicalDocument == null)
+                var document = _repository.GetById(id);
+                if (document.FileKey != null) 
                 {
-                    return NotFound($"Medical document with id {id} wasn't found.");
+                    await _minioService.DeleteFile(document.FileKey);
+                    document.FileKey = null;
+                    _repository.Update(document);
+                    _repository.Save();
                 }
 
-                var deletedMedicalDocumentDto = _mapper.Map<MedicalDocumentDTO>(deletedMedicalDocument);
+                document = _repository.Delete(id);
+                var deletedMedicalDocumentDto = _mapper.Map<MedicalDocumentDTO>(document);
 
                 return Ok(deletedMedicalDocumentDto);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
-            }
-        }
-
-        [HttpGet("checkup/{checkupId}/download")]
-        public IActionResult DownloadDocumentsByCheckup(int checkupId)
-        {
-            try
-            {
-                var documents = _repository.GetMedicalDocumentByCheckupId(checkupId).ToList();
-                if (!documents.Any())
-                {
-                    return NotFound($"No medical documents found for checkup with ID {checkupId}.");
-                }
-
-                var patient = documents.FirstOrDefault()?.Checkup.Patient;
-                var zipFileName = $"{patient.FirstName}_{patient.LastName}_{documents.FirstOrDefault().Checkup.Date:yyyyMMdd}.zip";
-
-                return _zipService.CreateZipFile(documents, zipFileName);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
-            }
-        }
-
-        [HttpGet("patient/{patientId}/download")]
-        public IActionResult DownloadDocumentsByPatient(int patientId)
-        {
-            try
-            {
-                var documents = _repository.GetMedicalDocumentByPatientId(patientId).ToList();
-                if (!documents.Any())
-                {
-                    return NotFound($"No medical documents found for patient with ID {patientId}.");
-                }
-
-                var patient = documents.FirstOrDefault()?.Checkup.Patient;
-                var zipFileName = $"{patient.FirstName}_{patient.LastName}.zip";
-
-                return _zipService.CreateZipFile(documents, zipFileName);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
-            }
-        }
-
-        [HttpGet("checkup/{checkupId}")]
-        public IActionResult GetDocumentsMetadataByCheckup(int checkupId)
-        {
-            try
-            {
-                var documents = _repository.GetMedicalDocumentByCheckupId(checkupId).ToList();
-                if (!documents.Any())
-                {
-                    return NotFound($"No medical documents found for checkup with ID {checkupId}.");
-                }
-
-                var documentDtos = _mapper.Map<IEnumerable<MedicalDocumentDTO>>(documents);
-                return Ok(documentDtos);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
-            }
-        }
-
-        [HttpGet("patient/{patientId}")]
-        public IActionResult GetDocumentsMetadataByPatient(int patientId)
-        {
-            try
-            {
-                var documents = _repository.GetMedicalDocumentByPatientId(patientId).ToList();
-                if (!documents.Any())
-                {
-                    return NotFound($"No medical documents found for patient with ID {patientId}.");
-                }
-
-                var documentDtos = _mapper.Map<IEnumerable<MedicalDocumentDTO>>(documents);
-                return Ok(documentDtos);
             }
             catch (Exception ex)
             {

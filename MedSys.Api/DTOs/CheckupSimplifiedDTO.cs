@@ -5,14 +5,13 @@ namespace MedSys.Api.DTOs
 {
     public class CheckupSimplifiedDTO
     {
-        [JsonIgnore]
         public int Id { get; set; }
 
         [Required]
-        public PatientSimplifiedDTO Patient { get; set; } = null!;
+        public int PatientId { get; set; } 
 
         [Required]
-        public CheckupTypeSimplifiedDTO CheckupType { get; set; } = null!;
+        public int CheckupTypeId { get; set; } 
 
         [Required]
         public DateTime CheckupDateTime { get; set; }

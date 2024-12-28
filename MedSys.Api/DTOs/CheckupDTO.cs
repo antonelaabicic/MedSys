@@ -13,6 +13,7 @@ namespace MedSys.Api.Dtos
 
         [Required]
         public CheckupTypeSimplifiedDTO CheckupType { get; set; } = null!;
+        public int CheckupTypeId { get; set; } 
 
         [Required]
         public DateTime CheckupDateTime { get; set; }

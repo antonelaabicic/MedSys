@@ -1,0 +1,57 @@
+﻿@page "/Diseases/Edit/{id:int}"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.Dtos
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Edit Disease</PageTitle>
+<h3>Edit Disease</h3>
+
+<div class="pt-5">
+    <EditForm Model="@currentDisease" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="container-fluid" style="max-width: 400px;">
+            <div class="mb-3">
+                <label for="Name" class="form-label">Name</label>
+                <InputText id="Name" class="form-control" @bind-Value="currentDisease.Name" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-secondary" @onclick="NavigateBack">Cancel</button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    private DiseaseDTO currentDisease = new DiseaseDTO();
+    [Parameter] public int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentDisease = await ApiService.GetByIdAsync<DiseaseDTO>(Id);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var isUpdated = await ApiService.UpdateAsync<DiseaseDTO>(currentDisease.Id, currentDisease);
+        if (isUpdated)
+        {
+            NavigateBack();
+        }
+        else
+        {
+            Console.WriteLine("Failed to update disease.");
+        }
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo("/Diseases", forceLoad: false);
+        Navigation.Refresh();
+    }
+}
+ 

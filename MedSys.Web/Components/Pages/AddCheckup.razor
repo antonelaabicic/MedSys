@@ -1,0 +1,79 @@
+﻿@page "/Checkups/Add/{id:int}"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.DTOs
+@using MedSys.Api.Dtos
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Add Checkup</PageTitle>
+<h3>Add Checkup</h3>
+
+<div class="pt-5">
+    <EditForm Model="@newCheckup" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="container-fluid" style="max-width: 400px;">
+            <div class="mb-3">
+                <label for="CheckupTypeId" class="form-label">Checkup Type</label>
+                <InputSelect id="CheckupTypeId" class="form-control" @bind-Value="newCheckup.CheckupTypeId">
+                    <option value="">-- Select Checkup Type --</option>
+                    @foreach (var type in checkupTypes)
+                    {
+                        <option value="@type.Id">@type.Name (@type.Code)</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div class="mb-3">
+                <label for="CheckupDateTime" class="form-label">Checkup Date and Time</label>
+                <input id="CheckupDateTime" type="datetime-local" class="form-control"
+                       @bind="newCheckup.CheckupDateTime" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-secondary" @onclick="NavigateBack">Cancel</button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter] public int id { get; set; }
+    private CheckupSimplifiedDTO newCheckup = new CheckupSimplifiedDTO();
+    private List<CheckupTypeDTO> checkupTypes = new List<CheckupTypeDTO>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        newCheckup.PatientId = id;
+        checkupTypes = await ApiService.GetAllAsync<CheckupTypeDTO>();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var result = await ApiService.CreateAsync<CheckupSimplifiedDTO>(newCheckup);
+            if (result.IsSuccessStatusCode)
+            {
+                NavigateBack();
+            }
+            else
+            {
+                Console.WriteLine("Failed to add checkup.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An exception occurred while adding the checkup: {ex.Message}");
+        }
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo($"/Patients/View/{id}", forceLoad: false);
+        Navigation.Refresh();
+    }
+}
+ 

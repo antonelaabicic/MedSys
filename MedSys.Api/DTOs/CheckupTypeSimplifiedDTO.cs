@@ -6,7 +6,7 @@ namespace MedSys.Api.DTOs
 {
     public class CheckupTypeSimplifiedDTO
     {
-        [JsonIgnore]
+        //[JsonIgnore]
         public int Id { get; set; }
 
         [Required]

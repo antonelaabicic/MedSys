@@ -1,0 +1,176 @@
+﻿@page "/Patients"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.Dtos
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Patients</PageTitle>
+<h3>Patients</h3>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <input type="text" class="form-control d-inline w-auto me-2" placeholder="Last Name" @bind="searchLastName" />
+        <input type="text" class="form-control d-inline w-auto me-2" placeholder="OIB" @bind="searchOib" />
+        <button class="btn btn-primary" @onclick="SearchPatients">Search</button>
+        <button class="btn btn-outline-info" @onclick="ClearSearch">Clear</button>
+    </div>
+    <div>
+        <button class="btn btn-secondary" @onclick="ExportToCsv">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download h-4 w-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+        </button>
+        <button class="btn btn-success" @onclick="NavigateToAddPatient">Add Patient</button>
+    </div>
+</div>
+
+<div class="container-fluid pt-3">
+    <div class="table-responsive">
+        <table class="table table-bordered text-center">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Date of birth</th>
+                    <th>Gender</th>
+                    <th>OIB</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var patient in patients)
+                {
+                    <tr>
+                        <td>@patient.Id</td>
+                        <td>@patient.FirstName</td>
+                        <td>@patient.LastName</td>
+                        <td>@patient.DateOfBirth.ToString("dd.MM.yyyy.")</td>
+                        <td>@patient.Gender</td>
+                        <td>@patient.Oib</td>
+                        <td>
+                            <button class="btn btn btn-warning btn-sm" @onclick="() => ViewPatient(patient.Id)">View</button>
+                            <button class="btn btn-primary btn-sm" @onclick="() => EditDrug(patient.Id)">Edit</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => ShowDeleteDrug(patient)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (showDeleteConfirmation)
+{
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" @onclick="CloseDeleteConfirmation"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete @currentPatient.FirstName @currentPatient.LastName (@currentPatient.Oib)?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDeleteConfirmation">Cancel</button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmDeleteDrug">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private List<PatientDTO> patients = new List<PatientDTO>();
+    private PatientDTO currentPatient = new PatientDTO();
+    private bool showDeleteConfirmation = false;
+
+    private string searchLastName = string.Empty;
+    private string searchOib = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllPatientsAsync();
+    }
+
+    private async Task LoadAllPatientsAsync()
+    {
+        patients = await ApiService.GetAllAsync<PatientDTO>();
+        patients = patients.OrderBy(p => p.Id).ToList();
+    }
+
+    private void NavigateToAddPatient()
+    {
+        Navigation.NavigateTo("/Patients/Add", forceLoad: false);
+    }
+
+    private void EditDrug(int patientId)
+    {
+        Navigation.NavigateTo($"/Patients/Edit/{patientId}", forceLoad: false);
+    }
+
+    private void ViewPatient(int patientId)
+    {
+        Navigation.NavigateTo($"/Patients/View/{patientId}", forceLoad: false);
+    }
+
+    private void ShowDeleteDrug(PatientDTO patient)
+    {
+        currentPatient = patient;
+        showDeleteConfirmation = true;
+    }
+
+    private void CloseDeleteConfirmation()
+    {
+        showDeleteConfirmation = false;
+    }
+
+    private async Task ConfirmDeleteDrug()
+    {
+        var isDeleted = await ApiService.DeleteAsync<PatientDTO>(currentPatient.Id);
+        if (isDeleted) 
+        {
+            patients.Remove(currentPatient);
+        }
+        else
+        {
+            Console.WriteLine("Failed to delete patient.");
+        }
+        showDeleteConfirmation = false;
+    }
+
+    private async Task SearchPatients()
+    {
+        try
+        {
+            patients = await ApiService.SearchPatientsAsync(searchLastName, searchOib);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error during search: {ex.Message}");
+        }
+    }
+
+    private async Task ClearSearch()
+    {
+        searchLastName = string.Empty;
+        searchOib = string.Empty;
+        await LoadAllPatientsAsync();
+    }
+
+    private async Task ExportToCsv()
+    {
+        try
+        {
+            var downloadUrl = await ApiService.ExportPatientsAsync();
+            Navigation.NavigateTo(downloadUrl, forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error exporting patients: {ex.Message}");
+        }
+    }
+}

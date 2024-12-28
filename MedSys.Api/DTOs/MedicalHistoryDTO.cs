@@ -13,6 +13,7 @@ namespace MedSys.Api.Dtos
 
         [Required]
         public DiseaseSimplifiedDTO Disease { get; set; } = null!;
+        public int DiseaseId { get; set; }
 
         [Required]
         public DateTime StartDate { get; set; }

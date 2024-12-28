@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using MedSys.Api.Dtos;
 using MedSys.Api.DTOs;
 using MedSys.BL.DALModels;
 using MedSys.BL.Repositories;
@@ -33,6 +34,20 @@ namespace MedSys.Api.Controllers
             {
                 return StatusCode(500, ex.Message);
             }
+        }
+
+        [HttpGet("{id}")]
+        public ActionResult<CheckupTypeDTO> Get(int id)
+        {
+            var checkupType = _repository.GetById(id);
+            if (checkupType == null)
+            {
+                return NotFound($"Checkup type with id {id} was not found.");
+            }
+
+            var dto = _mapper.Map<CheckupTypeDTO>(checkupType);
+
+            return Ok(dto);
         }
 
         [HttpPost]

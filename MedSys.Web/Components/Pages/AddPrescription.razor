@@ -1,0 +1,89 @@
+﻿@page "/Prescriptions/Add/{id:int}"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.DTOs
+@using MedSys.Api.Dtos
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Add Prescription</PageTitle>
+<h3>Add Prescription</h3>
+
+<div class="pt-5">
+    <EditForm Model="@newPrescription" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="container-fluid" style="max-width: 400px;">
+            <div class="mb-3">
+                <label for="DrugId" class="form-label">Drug</label>
+                <InputSelect id="DrugId" class="form-control" @bind-Value="newPrescription.DrugId">
+                    <option value="">-- Select Drug --</option>
+                    @foreach (var drug in drugs)
+                    {
+                        <option value="@drug.Id">@drug.Name</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="mb-3">
+                <label for="Dosage" class="form-label">Dosage</label>
+                <InputText id="Dosage" class="form-control" @bind-Value="newPrescription.Dosage" />
+            </div>
+            <div class="mb-3">
+                <label for="Frequency" class="form-label">Frequency</label>
+                <InputText id="Frequency" class="form-control" @bind-Value="newPrescription.Frequency" />
+            </div>
+            <div class="mb-3">
+                <label for="Duration" class="form-label">Duration</label>
+                <InputText id="Duration" class="form-control" @bind-Value="newPrescription.Duration" />
+            </div>
+            <div class="mb-3">
+                <label for="IssueDate" class="form-label">Issue Date</label>
+                <input id="IssueDate" type="date" class="form-control" @bind="newPrescription.IssueDate" min="1920-01-01" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn btn-secondary" @onclick="NavigateBack">Cancel</button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter] public int id { get; set; }
+    private PrescriptionSimplifiedDTO newPrescription = new PrescriptionSimplifiedDTO();
+    private List<DrugDTO> drugs = new List<DrugDTO>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        newPrescription.PatientId = id;
+        drugs = await ApiService.GetAllAsync<DrugDTO>();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var result = await ApiService.CreateAsync<PrescriptionSimplifiedDTO>(newPrescription);
+            if (result.IsSuccessStatusCode)
+            {
+                NavigateBack();
+            }
+            else
+            {
+                Console.WriteLine("Failed to add prescription.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An exception occurred while adding the prescription: {ex.Message}");
+        }
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo($"/Patients/View/{id}", forceLoad: false);
+        Navigation.Refresh();
+    }
+}
+ 

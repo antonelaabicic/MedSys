@@ -1,0 +1,160 @@
+﻿@page "/Checkups/View/{patientId:int}/{checkupId:int}"
+@using System.ComponentModel.DataAnnotations
+@using MedSys.Api.DTOs
+@using MedSys.Api.Dtos
+@using MedSys.Api.Services
+@inject IApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Checkup Details</PageTitle>
+<h3>Checkup Details</h3>
+
+@if (checkup == null)
+{
+    <p>Loading checkup details...</p>
+}
+else
+{
+    <div>
+        <p><strong>Patient:</strong> @patient.FirstName @patient.LastName (@patient.Oib)</p>
+        <p><strong>Checkup Type:</strong> @checkupType.Name (@checkupType.Code)</p>
+        <p>
+            <strong>Appointment:</strong>
+            @checkup.CheckupDateTime.ToString("dd.MM.yyyy."),
+            @checkup.CheckupDateTime.ToString("HH:mm") h
+        </p>
+    </div>
+    <hr />
+    <h4>Medical Documents</h4>
+    <div class="d-flex justify-content-between">
+        <div class="ms-auto">
+            <button class="btn btn-success" @onclick="() => NavigateToAddMedicalDocument(checkupId)">Add Medical Document</button>
+        </div>
+    </div>
+    @if (medicalDocuments.Any())
+    {
+        <div class="container-fluid pt-3">
+            <div class="table-responsive">
+                <table class="table table-bordered text-center">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Text</th>
+                            <th>Notes</th>
+                            <th>File</th>
+                            <th>Created At</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var medicalDocument in medicalDocuments)
+                        {
+                            <tr>
+                                <td>@medicalDocument.Title</td>
+                                <td>@medicalDocument.Text</td>
+                                <td>@medicalDocument.Notes</td>
+                                <td><a href="@medicalDocument.FileUrl" class="btn btn-link" target="_blank">Download</a></td>
+                                <td>@medicalDocument.CreatedAt</td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm" @onclick="() => EditMedDocument(medicalDocument.Id)">Edit</button>
+                                    <button class="btn btn-danger btn-sm" @onclick="() => ShowDeleteMedDocument(medicalDocument)">Delete</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <p>No medical documents found for this checkup.</p>
+    }
+
+    <button class="btn btn-secondary mt-3" @onclick="GoBack">Back</button>
+}
+
+@if (showDeleteConfirmation)
+{
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" @onclick="CloseDeleteConfirmation"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete @currentMedicalDocument.Title?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseDeleteConfirmation">Cancel</button>
+                    <button class="btn btn-danger" @onclick="ConfirmDeleteMedDocument">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    [Parameter] public int patientId { get; set; }
+    [Parameter] public int checkupId { get; set; }
+
+    private CheckupSimplifiedDTO checkup = new CheckupSimplifiedDTO();
+    private PatientDTO patient = new PatientDTO();
+    private CheckupTypeDTO checkupType = new CheckupTypeDTO();
+
+    private List<MedicalDocumentDTO> medicalDocuments = new List<MedicalDocumentDTO>();
+    private MedicalDocumentDTO currentMedicalDocument = new MedicalDocumentDTO();
+    private bool showDeleteConfirmation = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        checkup = await ApiService.GetByIdAsync<CheckupSimplifiedDTO>(checkupId);
+        checkupType = await ApiService.GetByIdAsync<CheckupTypeDTO>(checkup.CheckupTypeId);
+        patient = await ApiService.GetByIdAsync<PatientDTO>(patientId);
+
+        medicalDocuments = await ApiService.GetDocumentsByCheckupIdAsync(checkupId);
+    }
+
+    private void NavigateToAddMedicalDocument(int checkupId)
+    {
+        Navigation.NavigateTo($"/MedicalDocuments/Add/{patientId}/{checkupId}", forceLoad: false);
+    }
+
+    private void EditMedDocument(int medicalDocumentId)
+    {
+        Navigation.NavigateTo($"/MedicalDocuments/Edit/{patientId}/{checkupId}/{medicalDocumentId}", forceLoad: false);
+    }
+
+    private void ShowDeleteMedDocument(MedicalDocumentDTO medicalDocument)
+    {
+        currentMedicalDocument = medicalDocument;
+        showDeleteConfirmation = true;
+    }
+
+    private void CloseDeleteConfirmation()
+    {
+        showDeleteConfirmation = false;
+    }
+
+    private async Task ConfirmDeleteMedDocument()
+    {
+        var isDeleted = await ApiService.DeleteAsync<MedicalDocumentDTO>(currentMedicalDocument.Id);
+        if (isDeleted)
+        {
+            medicalDocuments.Remove(currentMedicalDocument);
+        }
+        else
+        {
+            Console.WriteLine("Failed to delete medical document.");
+        }
+        showDeleteConfirmation = false;
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo($"/Patients/View/{patientId}", forceLoad: false);
+    }
+}
