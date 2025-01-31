@@ -2,8 +2,7 @@
     This project is a web-based medical management system. It is for managing patients, medical records, appointments, and prescriptions. 
 </p>
 
-<!-- ABOUT THE PROJECT -->
-## About The Project
+## 📌 About The Project
 
 The system is built using ASP.NET Web API for backend development and Blazor for a dynamic and interactive frontend interface. Patient data, medical records, checkup details, and prescriptions are securely stored 
 in a PostgreSQL database, while uploaded files are managed using MinIO for scalable and reliable object storage.
@@ -13,7 +12,7 @@ by patient surname or OIB, viewing detailed medical histories, and exporting pat
 
 MedSys implements the Repository Factory pattern for data abstraction and employs lazy loading for optimized resource utilization. 
 
-## Built With
+## 🛠 Built With
 
 ### Languages & Frameworks
 ![C#](https://img.shields.io/badge/c%23-%23239120.svg?style=for-the-badge&logo=csharp&logoColor=white)
